@@ -22,7 +22,7 @@ by the same validator.
   assets or whole compositions while a game is running (for example from a downloaded copy of the
   library), copy [`tools/godot/prop_commons.gd`](tools/godot/prop_commons.gd) into your project and
   call `PropCommons.load_asset_file(path)` or `PropCommons.load_composition_file(json, library)`.
-  Tested with Godot 4.7.2.
+  It also shows clear glass as see-through, which Godot's importer doesn't. Tested with Godot 4.7.2.
 - **For tools and agents:** [`index.json`](https://propcommons.github.io/propcommons/index.json)
   lists every asset with its measured size, triangle count, textures, credits and file paths. Its
   shape is documented in [`spec/INDEX.md`](spec/INDEX.md). [`llms.txt`](https://propcommons.github.io/propcommons/llms.txt)
