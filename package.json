@@ -20,7 +20,9 @@
     "format": "biome check --write .",
     "typecheck": "tsc -p tsconfig.json",
     "check": "npm run lint && npm run typecheck && npm test",
-    "propcommons": "node packages/cli/src/main.ts"
+    "propcommons": "node packages/cli/src/main.ts",
+    "site": "node packages/site/src/build.ts",
+    "site:serve": "node packages/site/src/serve.ts --dir site-dist"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.8",

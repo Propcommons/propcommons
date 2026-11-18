@@ -116,3 +116,23 @@ build choices, not spec changes: any of them can be reversed by the maintainer.
 - **In CI**, previews are rendered for each added asset whose file passes the file checks, and are
   uploaded with the results. A rendering failure is logged but does not fail the check; the rules
   decide pass or fail.
+
+## Site
+
+- **Pages are built as static HTML** by `packages/site/src/build.ts`, with every manifest value
+  escaped. Links from manifests (`source_url`, `notes_url`) are rendered only when they start with
+  `https://`; anything else is shown as plain text.
+- **Content security policy** on every page: scripts only from the site itself, plus the Three.js
+  import map allowed by its hash. No analytics, fonts or other third-party requests.
+- **Vendored viewers.** `<model-viewer>` is the pinned package's standalone bundle (it carries its
+  own Three.js). The composition viewer uses the same pinned Three.js as the preview renderer and
+  the same `stage.js`, so a composition looks like its previews.
+- **The gallery shows the latest live version of each asset.** Every version, including taken-down
+  ones, has its own page.
+- **Previews are cached locally** under `previews/` (ignored by git) with a key over the model hash,
+  its tags and the hashes of same-class assets, since the kit view depends on its neighbours. In CI
+  they are rendered fresh on every deploy.
+- **The base path** comes from `project.config.json` (`site.basePath`), and can be overridden with
+  `--base` or `SITE_BASE`.
+- **Deploy runs only on pushes to `main`** (no manual trigger), and only its deploy job has write
+  permission.

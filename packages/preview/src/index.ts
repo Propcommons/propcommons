@@ -10,7 +10,7 @@ import { chromium } from "playwright";
 
 const SCENE_DIR = path.join(import.meta.dirname, "..", "scene");
 const require = createRequire(import.meta.url);
-const THREE_DIR = path.dirname(path.dirname(require.resolve("three"))); // node_modules/three
+export const THREE_DIR = path.dirname(path.dirname(require.resolve("three"))); // node_modules/three
 export const PREVIEW_VIEWS = ["front", "side", "top", "kit"] as const;
 const ORIGIN = "http://preview.invalid";
 

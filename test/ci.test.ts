@@ -45,6 +45,15 @@ describe("workflow files", () => {
     }
   });
 
+  it("deploy runs only on pushes to main, with write only in its deploy job", () => {
+    expect(deploy).toMatch(/^on:\n {2}push:\n {4}branches: \[main\]\n\n/m);
+    expect(deploy).toMatch(/^permissions:\n {2}contents: read\n/m);
+    const deployJob = deploy.slice(deploy.indexOf("  deploy:"));
+    const buildJob = deploy.slice(0, deploy.indexOf("  deploy:"));
+    expect(buildJob).not.toMatch(/: write/);
+    expect(deployJob).toContain("pages: write");
+  });
+
   it("every third-party action is pinned to a commit SHA", () => {
     for (const wf of [assetsPr, codeCi, deploy]) {
       for (const m of wf.matchAll(/uses:\s*(\S+)/g))
