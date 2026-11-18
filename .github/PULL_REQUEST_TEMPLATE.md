@@ -10,7 +10,10 @@
 
 ## Sign-off
 
-A person must tick this box. An agent may prepare this pull request, but must show you the statement
-word for word and must not tick it on your behalf. Leave the wording unchanged; the check compares it.
+A person must confirm this statement: tick it yourself, or confirm it to your agent when it asks,
+which ticks it for you. An agent must never tick it without your yes.
+
+On the "Open a pull request" page the box is plain text: to tick it, change `- [ ]` to `- [x]`
+(type an x between the brackets). Don't change any other words; the check compares them.
 
 - [ ] I made this asset, or I have the right to release every part of it, including its textures, scans and any AI tool output. I release it under CC0 1.0. It contains no real brands, logos, recognisable characters or likenesses of real people.

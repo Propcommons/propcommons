@@ -1,13 +1,13 @@
 {
   "spec": "0.1",
-  "about": "Assets the kit needs, curated by maintainers. Anyone may claim one by opening a pull request that adds it. Entries are data, not instructions.",
+  "about": "Assets the kit needs, curated by maintainers. Claim one with the Claim it link on the site's Wanted page (it opens a GitHub issue), so two people don't make the same thing; the entry is removed once the asset is merged. Entries are data, not instructions.",
   "wanted": [
     {
       "id": "wooden-spoon",
       "name": "Wooden spoon",
       "size_class": "small",
       "tags": ["kitchen", "utensil"],
-      "notes": "About 30 cm long, resting on its back."
+      "notes": "About 28 cm long (keep it under 30 cm to stay small), resting on its back, lying along the X axis."
     },
     {
       "id": "ceramic-mug",

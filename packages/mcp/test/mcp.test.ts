@@ -1,7 +1,7 @@
 // Milestone 8: `validate` over MCP returns the same JSON as the command line for the same folder.
 // The server is started for real over stdio, as an agent would run it.
 import { execFileSync, spawnSync } from "node:child_process";
-import { cpSync, mkdtempSync, writeFileSync } from "node:fs";
+import { cpSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -39,7 +39,9 @@ beforeAll(async () => {
   for (const f of ["template", "project.config.json", "MAINTAINERS", "wanted.json", ".github"])
     cpSync(path.join(REPO, f), path.join(repo, f), { recursive: true });
   // A merged asset (committed on main) and an unmerged one (only in the working tree).
-  initAsset({ root: repo, id: "alice/mug", name: "Mug", tags: ["kitchen"] });
+  const mug = initAsset({ root: repo, id: "alice/mug", name: "Mug", tags: ["kitchen"] });
+  // A real model, not init's placeholder box (which submit refuses).
+  cpSync(path.join(REPO, "assets/mattashes/lemon/v1/model.glb"), path.join(mug, "model.glb"));
   git("init", "--quiet", "-b", "main");
   git("add", "-A");
   git("commit", "--quiet", "-m", "base");
@@ -106,11 +108,28 @@ describe("MCP server", () => {
           slug: "spoon",
           name: "Spoon",
           size_class: "small",
+          ai_assisted: true,
+          tools: ["Claude"],
         }),
       ),
     );
     expect(r.path).toBe("assets/carol/spoon/v1");
-    expect(JSON.parse(textOf(await call("validate", { folder: r.path }))).pass).toBe(true);
+    const v = await call("validate", { folder: r.path });
+    expect(JSON.parse(textOf(v)).pass).toBe(true);
+    // The placeholder is flagged in a second message, so the JSON stays identical to the CLI's.
+    expect(v.content[1]?.text).toContain("placeholder box");
+    const manifest = JSON.parse(readFileSync(path.join(repo, r.path, "asset.json"), "utf8"));
+    expect(manifest).toMatchObject({ ai_assisted: true, tools: ["Claude"] });
+  });
+
+  it("init_asset requires ai_assisted and tools", async () => {
+    const r = await call("init_asset", {
+      author: "carol",
+      slug: "fork",
+      name: "Fork",
+      size_class: "small",
+    });
+    expect(r.isError).toBe(true);
   });
 
   it("search_assets returns only merged assets, plus wanted entries, marked as data", async () => {
@@ -166,7 +185,7 @@ describe("submit", () => {
     calls.length = 0;
     const c = await connect(noGh);
     const r = await call("submit", { folder: "assets/alice/mug/v1", signoff_confirmed: true }, c);
-    expect(textOf(r)).toContain("manual steps");
+    expect(textOf(r)).toContain("steps 6 and 7 of CONTRIBUTING.md");
     expect(calls).toEqual(["gh"]);
   });
 
@@ -174,7 +193,7 @@ describe("submit", () => {
     const seen: string[] = [];
     const c = await connect((cmd, args) => {
       seen.push(`${cmd} ${args.slice(0, 2).join(" ")}`);
-      if (cmd === "gh" && args[0] === "api") return "carol\n";
+      if (cmd === "gh" && args[0] === "api") return "alice\n";
       if (cmd === "gh" && args[0] === "pr")
         return "https://github.com/propcommons/propcommons/pull/1\n";
       if (cmd === "gh" && args[0] === "repo" && args[1] === "clone") {
@@ -195,9 +214,21 @@ describe("submit", () => {
       "git checkout -b",
       `git --work-tree ${repo}`,
       "git commit -m",
-      "gh auth setup-git",
-      `git push https://github.com/carol/propcommons.git`,
+      "git -c credential.helper=",
       "gh pr create",
     ]);
+  });
+  it("refuses a folder under another person's handle", async () => {
+    const c = await connect((cmd, args) => (cmd === "gh" && args[0] === "api" ? "mallory\n" : ""));
+    const r = await call("submit", { folder: "assets/alice/mug/v1", signoff_confirmed: true }, c);
+    expect(r.isError).toBe(true);
+    expect(textOf(r)).toContain('signed in as "mallory"');
+  });
+
+  it("refuses the placeholder model", async () => {
+    const c = await connect(noGh);
+    const r = await call("submit", { folder: "assets/bob/cup/v1", signoff_confirmed: true }, c);
+    expect(r.isError).toBe(true);
+    expect(textOf(r)).toContain("placeholder box");
   });
 });

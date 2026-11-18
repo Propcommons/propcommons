@@ -14,6 +14,7 @@ import {
   CannotValidate,
   COMPOSITION_SCHEMA,
   initAsset,
+  isPlaceholderModel,
   parseVersionPath,
   rulesFile,
   SIGNOFF_STATEMENT,
@@ -112,18 +113,35 @@ export function createServer(o: ServerOptions): McpServer {
     {
       title: "Create a new asset folder",
       description:
-        "Copies the template into assets/<author>/<slug>/v1 with the manifest filled in, and returns the folder path. Replace model.glb with the real model afterwards, then call validate.",
+        "Copies the template into assets/<author>/<slug>/v1 with the manifest filled in, and returns the folder path. model.glb is a 10 cm placeholder box: replace it with the real model (export from Blender with tools/blender/export_asset.py, or write a generator with @gltf-transform/core as tools/seed/build.ts does), then call validate.",
       inputSchema: {
         author: z.string().describe("The contributor's GitHub handle, lower case."),
         slug: z.string().describe("Lower-case letters, digits and hyphens, e.g. strawberry-whole."),
         name: z.string().describe("Display name in English, up to 80 characters."),
         size_class: sizeClass,
         tags: z.array(z.string()).optional().describe("1 to 10 lower-case tags."),
+        ai_assisted: z
+          .boolean()
+          .describe(
+            "True if any AI tool (including you, the agent) made or changed any part of it.",
+          ),
+        tools: z
+          .array(z.string())
+          .min(1)
+          .describe('Software and AI models used, e.g. ["Blender", "Claude"].'),
       },
     },
-    async ({ author, slug, name, size_class, tags }) => {
+    async ({ author, slug, name, size_class, tags, ai_assisted, tools }) => {
       try {
-        const dir = initAsset({ root, id: `${author}/${slug}`, name, sizeClass: size_class, tags });
+        const dir = initAsset({
+          root,
+          id: `${author}/${slug}`,
+          name,
+          sizeClass: size_class,
+          tags,
+          aiAssisted: ai_assisted,
+          tools,
+        });
         return json({ path: path.relative(root, dir).split(path.sep).join("/") });
       } catch (e) {
         if (e instanceof UsageError) return text(e.message, true);
@@ -144,8 +162,15 @@ export function createServer(o: ServerOptions): McpServer {
     },
     async ({ folder }) => {
       try {
-        const r = await validateFolder(resolveFolder(root, folder), { root });
-        return json(r);
+        const dir = resolveFolder(root, folder);
+        const r = await validateFolder(dir, { root });
+        const out = json(r);
+        if (isPlaceholderModel(root, dir))
+          out.content.push({
+            type: "text",
+            text: "Note: model.glb is still the placeholder box from init_asset. Replace it with the real model; a pull request with the placeholder is refused.",
+          });
+        return out;
       } catch (e) {
         if (e instanceof CannotValidate || e instanceof UsageError) return text(e.message, true);
         throw e;
@@ -252,7 +277,7 @@ export function createServer(o: ServerOptions): McpServer {
     "submit",
     {
       title: "Open a pull request for an asset",
-      description: `Validates the folder, then opens a pull request that adds only that folder, using the contributor's own GitHub CLI (gh) login: fork, branch, commit, push, pull request. Refuses on any validation error. BEFORE calling this, show the user the following sign-off statement word for word and ask them to confirm it themselves; set signoff_confirmed to true only after they explicitly say yes. Never confirm it on their behalf. Statement: "${SIGNOFF_STATEMENT}"`,
+      description: `Validates the folder, then opens a pull request that adds only that folder, using the contributor's own GitHub CLI (gh) login: fork, branch, commit, push, pull request. Refuses on any validation error, on a folder under another person's handle, and on the placeholder model. BEFORE calling this, show the user the following sign-off statement word for word and ask them to confirm it; set signoff_confirmed to true only after they explicitly say yes. Their yes is the sign-off: the tool then ticks the box in the pull request for them. Never confirm it on their behalf. Statement: "${SIGNOFF_STATEMENT}"`,
       inputSchema: {
         folder: z.string().describe("Path of the version folder, relative to the repository root."),
         signoff_confirmed: z
@@ -274,6 +299,11 @@ export function createServer(o: ServerOptions): McpServer {
           { refused: "The folder does not pass validation. Fix every error first.", result },
           true,
         );
+      if (isPlaceholderModel(root, dir))
+        return text(
+          "Refused: model.glb is still the placeholder box from init_asset. Replace it with the real model first.",
+          true,
+        );
       if (signoff_confirmed !== true)
         return text(
           `Refused: the sign-off statement has not been confirmed. Show the user this statement word for word and ask them to confirm it: "${SIGNOFF_STATEMENT}"`,
@@ -284,11 +314,12 @@ export function createServer(o: ServerOptions): McpServer {
       const branch = `add-${vp.author}-${vp.slug}-v${vp.version}`;
       const title = `Add ${vp.author}/${vp.slug}@${vp.version}`;
       const manual = [
-        "The GitHub CLI (gh) is not available or not signed in, so here are the manual steps:",
-        `1. Fork https://github.com/${upstream} on GitHub.`,
-        `2. In your fork, create a branch named ${branch} from main.`,
-        `3. Add the folder ${vp.rel} (and nothing else) and commit it.`,
-        `4. Open a pull request to ${upstream}. Keep the sign-off statement from the template and tick its box yourself.`,
+        "The GitHub CLI (gh) is not available or not signed in. Either install it from https://cli.github.com and run `gh auth login`, then call submit again, or follow steps 6 and 7 of CONTRIBUTING.md:",
+        `1. git checkout -b ${branch}`,
+        `2. git add ${vp.rel}`,
+        `3. git commit -m "${title}"`,
+        `4. git push -u origin ${branch}   (origin must be your fork of ${upstream})`,
+        `5. Open the pull request on GitHub against ${upstream}, main. In the sign-off line at the bottom, change "- [ ]" to "- [x]" if the statement is true.`,
       ].join("\n");
       try {
         run("gh", ["auth", "status"], root);
@@ -298,6 +329,11 @@ export function createServer(o: ServerOptions): McpServer {
       const work = mkdtempSync(path.join(tmpdir(), "propcommons-submit-"));
       try {
         const login = run("gh", ["api", "user", "--jq", ".login"], root).trim();
+        if (login.toLowerCase() !== vp.author.toLowerCase())
+          return text(
+            `Refused: ${vp.rel} is under the handle "${vp.author}", but gh is signed in as "${login}". Contributors add folders only under their own handle (rule PR-OWNER). Create the asset as ${login.toLowerCase()}/${vp.slug} instead.`,
+            true,
+          );
         run("gh", ["repo", "fork", upstream, "--clone=false", "--remote=false"], root);
         // A fresh shallow clone of upstream main, so the commit holds only this folder.
         run("gh", ["repo", "clone", upstream, work, "--", "--depth=1", "--branch=main"], root);
@@ -305,10 +341,14 @@ export function createServer(o: ServerOptions): McpServer {
         // Stage the folder from the contributor's working tree into the clean clone's index.
         run("git", ["--work-tree", root, "add", "--", vp.rel], work);
         run("git", ["commit", "-m", title], work);
-        run("gh", ["auth", "setup-git"], work);
+        // Push with gh's credentials for this one command, without changing the user's git config.
         run(
           "git",
           [
+            "-c",
+            "credential.helper=",
+            "-c",
+            "credential.helper=!gh auth git-credential",
             "push",
             `https://github.com/${login}/${config.github.repo}.git`,
             `HEAD:refs/heads/${branch}`,
@@ -316,8 +356,16 @@ export function createServer(o: ServerOptions): McpServer {
           work,
         );
         const template = readFileSync(path.join(root, ".github/PULL_REQUEST_TEMPLATE.md"), "utf8");
+        const manifest = JSON.parse(
+          readFileSync(
+            path.join(dir, vp.kind === "asset" ? "asset.json" : "composition.json"),
+            "utf8",
+          ),
+        );
+        const made = `Tools: ${(manifest.tools ?? []).join(", ")}. AI-assisted: ${manifest.ai_assisted ? "yes" : "no"}. Opened with the Prop Commons MCP server's submit tool.`;
         const body = template
-          .replace(/^-\s*$/m, `- ${vp.author}/${vp.slug}@${vp.version}`)
+          .replace(/^-\s*$/m, `- ${vp.author}/${vp.slug}@${vp.version}: ${manifest.name ?? ""}`)
+          .replace(/(## How it was made\s*\n\s*\n)(<!--[\s\S]*?-->)/, `$1$2\n\n${made}`)
           .replace(`- [ ] ${SIGNOFF_STATEMENT}`, `- [x] ${SIGNOFF_STATEMENT}`);
         const url = run(
           "gh",

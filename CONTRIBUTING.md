@@ -2,65 +2,103 @@
 
 This guide takes you from nothing to an open pull request that adds one asset. There are two paths:
 **with a coding agent** (Claude Code or any agent that speaks MCP) and **by hand**. Both use the
-same validator, and both end with you, a person, signing off.
+same validator, and both end with you, a person, confirming the sign-off.
 
 Everything you contribute is released under **CC0 1.0** (public domain). Read the
 [content policy](CONTENT_POLICY.md) before you start: no real brands, logos, recognisable
 characters or likenesses of real people, and you must have the right to release every part of the
 asset, textures and AI output included.
 
-## 1. What you need
+Plan on an hour or two for your first one, most of it installing tools. After that, an asset takes
+as long as the modelling does.
 
-- A **GitHub account**.
-- **git**: `git --version` should print a version. On macOS, running it the first time offers to
-  install it.
-- **Node.js 26** from https://nodejs.org (the LTS download). `node --version` should print v26 or
-  later.
-- **Blender** if you model in Blender (optional; any tool that exports glTF works). The export
-  script is tested with Blender 5.3; older versions may work.
+## 1. Set up your computer (once)
 
-## 2. Get the tools
+You need four things. Each step says how to check it worked.
 
-1. Open https://github.com/Propcommons/propcommons and click **Fork**, then **Create fork**. This
-   makes your own copy on GitHub that you can push to.
-2. Clone your fork. Replace `YOUR-HANDLE` with your GitHub username:
+1. **A GitHub account**: sign up at https://github.com if you don't have one.
+2. **git**: run `git --version` in a terminal. On macOS, if it isn't installed, that command offers
+   to install Apple's Command Line Tools, a large download that can take 10–30 minutes. Say yes and
+   let it finish.
+3. **Node.js 26.13 or later**: install the LTS version from https://nodejs.org, then check that
+   `node --version` prints v26.13.0 or higher.
+4. **The GitHub CLI** (`gh`), which signs git in to GitHub for you: install it from
+   https://cli.github.com, then run:
 
    ```bash
-   git clone https://github.com/YOUR-HANDLE/propcommons.git
+   gh auth login
+   ```
+
+   Choose **GitHub.com**, then **HTTPS**, answer **Yes** to "Authenticate Git with your GitHub
+   credentials", and sign in with your browser. GitHub no longer accepts your password for pushing
+   code, so this step matters.
+
+Then tell git your name and email, once. Use the private "noreply" address GitHub gives you, so
+your real email doesn't become public: find it at https://github.com/settings/emails (it looks like
+`12345678+yourname@users.noreply.github.com`).
+
+```bash
+git config --global user.name "Your Name"
+```
+
+```bash
+git config --global user.email "12345678+yourname@users.noreply.github.com"
+```
+
+If you model in **Blender**, install it from https://www.blender.org. The export script is tested
+with Blender 5.3; older versions may work.
+
+## 2. Get your own copy of the project
+
+1. Make your own copy (a "fork") on GitHub and download it, in one command:
+
+   ```bash
+   gh repo fork Propcommons/propcommons --clone
    ```
 
    ```bash
    cd propcommons
    ```
 
-3. Install the tools (this takes a minute):
+   Your fork is where you push your work. The original project is set up as `upstream`.
+
+2. Install the project's tools (about a minute):
 
    ```bash
    npm ci
    ```
 
-4. Optional, for preview images: install the headless browser the renderer uses (about 200 MB).
+   It may print warnings about "install scripts" or funding. Ignore them, and **don't** run any
+   `npm audit fix` command it suggests: that changes project files, and your pull request would
+   then be refused.
+
+3. Optional, for preview images: install the headless browser the renderer uses (about 200 MB).
 
    ```bash
    npx playwright install --only-shell chromium
    ```
 
-5. Check it works:
+4. Check it works:
 
    ```bash
    npx propcommons help
    ```
 
+   `npx propcommons` works inside this `propcommons` folder (and its subfolders), after `npm ci`.
+
 ## 3. Pick something to make
 
 - The [Wanted page](https://propcommons.github.io/propcommons/wanted/) lists what the kit needs.
+  Each entry has a **Claim it** link: use it, so two people don't make the same thing, and check
+  **See who's on it** first.
 - Check the [library](https://propcommons.github.io/propcommons/) so you don't duplicate an asset.
   To improve an existing one, see [New versions](#new-versions-and-derived-assets) below.
 - Keep to the spec's scope: one static, realistic object between about 1 cm and 4 m, at real-world
   size.
 
 Choose an **ID**: your GitHub handle in lower case, a slash, and a short name using lower-case
-letters, digits and hyphens, for example `alice/wooden-spoon`.
+letters, digits and hyphens, for example `yourname/wooden-spoon`. A Wanted entry's ID
+(`wooden-spoon`) is the part after the slash.
 
 Choose a **size class** from the object's longest side:
 
@@ -70,7 +108,9 @@ Choose a **size class** from the object's longest side:
 | `medium`   | over 30 cm to 1.2 m | 15,000        | 2048 px          | 3             | 10 MB         |
 | `large`    | over 1.2 m to 4 m   | 40,000        | 2048 px          | 4             | 10 MB         |
 
-Fine surface detail belongs in the normal map, not in extra triangles.
+The limits are strict. An object right on a boundary (a 30 cm spoon) can come out a few
+millimetres over once it is modelled; keep a little margin, or use the larger class. Fine surface
+detail belongs in the normal map, not in extra triangles.
 
 ## 4a. With a coding agent
 
@@ -84,42 +124,55 @@ claude mcp add propcommons -- node packages/mcp/src/main.ts
 
 Then ask your agent something like:
 
-> Using the propcommons MCP tools, make a small asset `YOUR-HANDLE/wooden-spoon`: a plain
-> wooden spoon about 30 cm long. Read the spec first, validate until it passes, show me the
-> previews, then show me the sign-off statement before you submit.
+> Using the propcommons MCP tools, make a small asset `yourname/wooden-spoon`: a plain wooden
+> spoon about 28 cm long. Read the spec first, validate until it passes, show me the previews,
+> then show me the sign-off statement before you submit.
 
 What to expect:
 
-- The agent reads the spec, creates the folder, makes or exports the model, and runs `validate`
-  until it passes. Each failure names a rule and says how to fix it.
-- It renders previews. **Look at them yourself**: is it the right size next to the scale cube, is
-  it resting the way it would on a table, and does it sit well beside its neighbours?
-- Before `submit`, the agent must show you the sign-off statement word for word. Confirm it only if
-  it is true. `submit` uses your own `gh` login (install the GitHub CLI from
-  https://cli.github.com and run `gh auth login`). Without `gh`, it gives you the manual steps,
-  which are steps 6 and 7 below.
+- **The agent reads the spec and creates the folder.** Because an AI is making it, the manifest
+  must say so: `ai_assisted: true`, with the agent listed in `tools`. `init_asset` asks for both.
+- **It makes the model.** If you have Blender, it can build the object there and export it with
+  `tools/blender/export_asset.py`. Without Blender, it can write a small script that builds the
+  mesh with the `@gltf-transform/core` library that `npm ci` installed, as
+  `tools/seed/build.ts` does for the seed assets. The script doesn't go in your pull request; if you
+  want to share it, publish it somewhere (a GitHub gist works) and put the link in `source_url`.
+- **It runs `validate` until it passes.** Each failure names a rule and says how to fix it.
+- **It renders previews. Look at them yourself:** is it the right size next to the scale cube, is
+  it resting the way it would on a table, are the colours right, and does it sit well beside its
+  neighbours?
+- **The sign-off.** Before `submit`, the agent must show you the sign-off statement word for word.
+  If it is true and you say yes, that yes is your sign-off: `submit` ticks the box in the pull
+  request for you. If it isn't true, say no.
+- **`submit`** opens the pull request with your `gh` login (step 1.4). It only accepts folders
+  under your own handle. Without `gh`, it prints the same steps as sections 6 and 7 below.
 
 ## 4b. By hand
 
 ### Create the folder
 
 ```bash
-npx propcommons init YOUR-HANDLE/wooden-spoon --name "Wooden spoon" --size-class small --tags kitchen,utensil,wood
+npx propcommons init yourname/wooden-spoon --name "Wooden spoon" --size-class small --tags kitchen,utensil,wood
 ```
 
-This creates `assets/YOUR-HANDLE/wooden-spoon/v1/` with an `asset.json` and a placeholder
-`model.glb` (a 10 cm box). You replace the model next.
+This creates `assets/yourname/wooden-spoon/v1/` with an `asset.json` and a **placeholder**
+`model.glb` (a 10 cm box). You replace the model next. If an AI tool helped, add `--ai-assisted`;
+to list your tools, add `--tools "Blender,Substance Painter"`. You can also edit both in
+`asset.json` later.
 
 ### Make the model
 
 Whatever tool you use, the result must be:
 
-- **In metres, at real-world size.** A 30 cm spoon is 0.3 units long.
-- **+Y up, front facing +Z** (the glTF standard; exporters do this conversion for you).
+- **In metres, at real-world size.** A 28 cm spoon is 0.28 units long.
+- **+Y up, front facing +Z** (the glTF standard; exporters convert for you). For a long object
+  with no obvious front (a spoon, a knife), lay it along the X axis.
 - **Standing on the ground**: its lowest point at height 0, and its footprint centred on the origin.
 - **One object**: one root node, with every transform applied (no scale other than 1).
 - **Triangles with normals**, UVs on anything textured, and **no vertex colours**.
-- **PNG or JPEG textures** whose sides are powers of two (256, 512, 1024...), embedded in the file.
+- **Colours from image textures or plain values.** PNG or JPEG textures whose sides are powers of
+  two (256, 512, 1024...), embedded in the file. Colours built from texture nodes (noise, colour
+  ramps, procedural wood) **don't export**: bake them to an image first, or use a plain colour.
 - **Plain glTF**: no Draco or Meshopt compression, no KTX2 or WebP textures. The only extensions
   allowed are the three glass ones: `KHR_materials_transmission`, `KHR_materials_volume` and
   `KHR_materials_ior`.
@@ -127,64 +180,83 @@ Whatever tool you use, the result must be:
 
 ### Export from Blender
 
-Put the object (or the parts that make it up) in a collection named `Asset`. Optionally, put up to
-8 simple convex shapes of at most 64 vertices each in a collection named `collision`. Save the
-.blend file, then run, from the `propcommons` folder:
+1. **Put your object in a collection named `Asset`.** In Blender's Outliner (top right),
+   right-click the scene collection, choose **New Collection**, double-click it and rename it to
+   `Asset`. Select your object (or all the parts that make it up), press **M** in the 3D view and
+   choose `Asset`.
+2. **Optional collision shapes:** up to 8 simple convex shapes of at most 64 vertices each, in a
+   collection named `collision`.
+3. **Save the .blend file.**
+4. **Run the export script from the `propcommons` folder.** On macOS, Blender's command is inside
+   the app. Type the start of the command below, then drag Blender.app from Finder into the
+   terminal and add `/Contents/MacOS/Blender` to get its full path:
 
-```bash
-blender --background path/to/your.blend --python tools/blender/export_asset.py -- --collection Asset --out assets/YOUR-HANDLE/wooden-spoon/v1
-```
+   ```bash
+   /Applications/Blender.app/Contents/MacOS/Blender --background path/to/your.blend --python tools/blender/export_asset.py -- --collection Asset --out assets/yourname/wooden-spoon/v1
+   ```
+
+   On Windows and Linux, `blender` is usually enough as the first word. The lone `--` matters: it
+   tells Blender that the options after it are for the script.
 
 The script works on copies and never changes or saves your .blend. It applies modifiers and
 transforms, joins and triangulates the parts, puts the lowest point on the ground and centres the
-footprint, removes vertex colours, and writes `model.glb` (and `collision.glb` if you made one).
-On macOS, `blender` is usually `/Applications/Blender.app/Contents/MacOS/Blender`.
+footprint, removes vertex colours, and writes `model.glb` (and `collision.glb` if you made one). It
+warns if a material's colour comes from nodes that won't export. Lines like "Draco is available"
+are Blender saying what it could do; the script doesn't use compression.
 
-**Other tools:** export a binary glTF (`.glb`) to `assets/YOUR-HANDLE/wooden-spoon/v1/model.glb`
+**Other tools:** export a binary glTF (`.glb`) to `assets/yourname/wooden-spoon/v1/model.glb`
 with compression off, textures embedded, and no cameras, lights or animation.
 
 ### Fill in asset.json
 
-Open `assets/YOUR-HANDLE/wooden-spoon/v1/asset.json` in a text editor and check every field:
+Open `assets/yourname/wooden-spoon/v1/asset.json` in a text editor and check every field:
 
-| Field                   | What to put                                                                                                                                                                                |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `name`                  | Display name in English, up to 80 characters                                                                                                                                               |
-| `size_class`            | `small`, `medium` or `large`                                                                                                                                                               |
-| `tags`                  | 1 to 10 lower-case tags, e.g. `["kitchen", "utensil"]`                                                                                                                                     |
-| `credits`               | Everyone who worked on it: `{ "github": "handle", "roles": [...] }` or `{ "name": "Full Name", "roles": [...] }`. Roles: `directed`, `modeled`, `sculpted`, `textured`, `coded`, `scanned` |
-| `ai_assisted`           | `true` if any AI tool made or changed any part of it, otherwise `false`                                                                                                                    |
-| `tools`                 | Software and AI models used, e.g. `["Blender", "Substance Painter"]`                                                                                                                       |
-| `source_url` (optional) | A link to your source files or generator                                                                                                                                                   |
-| `notes_url` (optional)  | A link to a write-up of how you made it                                                                                                                                                    |
-| `wikidata` (optional)   | The Wikidata ID of the kind of object: `Q` and digits, e.g. `Q89` for apple                                                                                                                |
+| Field                   | What to put                                                                                                                                                     |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`                  | Display name in English, up to 80 characters                                                                                                                    |
+| `size_class`            | `small`, `medium` or `large`                                                                                                                                    |
+| `tags`                  | 1 to 10 lower-case tags, e.g. `["kitchen", "utensil"]`                                                                                                          |
+| `credits`               | Everyone who worked on it: `{ "github": "handle", "roles": [...] }` or `{ "name": "Full Name", "roles": [...] }`. Roles are listed below                        |
+| `ai_assisted`           | `true` if any AI tool made or changed any part of it, otherwise `false`                                                                                         |
+| `tools`                 | Software and AI models used, e.g. `["Blender", "Substance Painter"]`                                                                                            |
+| `source_url` (optional) | A link to your source files or generator script, if you published them                                                                                          |
+| `notes_url` (optional)  | A link to a write-up of how you made it                                                                                                                         |
+| `wikidata` (optional)   | The Wikidata ID of the kind of object: search https://www.wikidata.org and copy the `Q` number from the item page, e.g. `Q89` for apple. Leave it out if unsure |
+
+Credit roles: `directed` (decided what to make and guided it, including directing an AI),
+`modeled` (built the mesh), `sculpted` (sculpted high detail), `textured` (made the textures),
+`coded` (wrote a script that generates it), `scanned` (captured it with photogrammetry or a
+scanner). List every role that applies.
 
 Leave `spec`, `id`, `version` and `license` as `init` wrote them.
 
 ## 5. Validate and look at it
 
 ```bash
-npx propcommons validate assets/YOUR-HANDLE/wooden-spoon/v1
+npx propcommons validate assets/yourname/wooden-spoon/v1
 ```
 
 It prints `PASS` or `FAIL`. Every problem has a rule ID, what was measured, the limit, and a
 `fix:` line saying what to do. Fix them and run it again until it passes. Warnings don't block a
-pull request, but a reviewer will ask about them. Add `--json` to get the full result as JSON.
+pull request, but a reviewer will ask about them. If it says the model is still the placeholder
+box, your export went somewhere else. Add `--json` to get the full result as JSON.
 
-Then render the previews a reviewer will see (needs the browser from step 2.4):
+Then render the previews a reviewer will see (needs the browser from step 2.3):
 
 ```bash
-npx propcommons preview assets/YOUR-HANDLE/wooden-spoon/v1
+npx propcommons preview assets/yourname/wooden-spoon/v1
 ```
 
-The four images land in `previews/YOUR-HANDLE/wooden-spoon/v1/`: front, side and top beside a
-scale cube (10 cm for small assets, 1 m otherwise), and `kit.png` beside up to two existing assets
-of the same size class. Check the things the validator can't:
+The four images land in `previews/yourname/wooden-spoon/v1/`: front, side and top beside a scale
+cube (10 cm for small assets, 1 m otherwise), and `kit.png` beside up to two existing assets of the
+same size class. Check the things the validator can't:
 
 1. **Proportions**: is it the right size next to the cube?
 2. **Pose and facing**: does it rest the way it would on a table, front towards you?
-3. **Normal map**: bumps should look like bumps, not dents.
-4. **Fit with the kit**: does it look at home beside its neighbours?
+3. **Colours and normal map**: are the colours right (not plain white or grey), and do bumps look
+   like bumps, not dents?
+4. **Graceful fallback**: if you used a glass extension, would it still be recognisable without it?
+5. **Fit with the kit**: does it look at home beside its neighbours?
 
 ## 6. Commit only your folder
 
@@ -193,42 +265,43 @@ git checkout -b add-wooden-spoon
 ```
 
 ```bash
-git add assets/YOUR-HANDLE/wooden-spoon/v1
+git add assets/yourname/wooden-spoon/v1
 ```
 
 ```bash
-git commit -m "Add YOUR-HANDLE/wooden-spoon@1"
+git commit -m "Add yourname/wooden-spoon@1"
 ```
 
 ```bash
 git push -u origin add-wooden-spoon
 ```
 
-One pull request adds one or more asset or composition folders and **nothing else**. A pull request
-that also changes other files fails and asks you to split it. Don't commit `previews/`; it is
-ignored on purpose.
+One pull request adds one or more asset or composition folders and **nothing else**. If you
+changed any other file by accident, the check lists it and tells you how to put it back. Don't
+commit `previews/`; it is ignored on purpose. If `git commit` asks who you are, or `git push` asks
+for a password, go back to step 1.
 
 ## 7. Open the pull request
 
-1. Open your fork on GitHub. A banner offers **Compare & pull request**; click it. (Or go to
-   https://github.com/Propcommons/propcommons/pulls, click **New pull request**, then
-   **compare across forks**, and choose your fork and branch.)
+1. Open your fork on GitHub. A banner offers **Compare & pull request**; click it. (Or run
+   `gh pr create --web` in the terminal, which opens the same page.)
 2. Check the base is `Propcommons/propcommons`, branch `main`.
 3. Fill in the template: one line per asset, and how you made it.
-4. **Sign off.** Read the statement at the bottom. If it is true, tick its box yourself. Don't
-   change its wording; the check compares it word for word. An agent may prepare a pull request but
-   must never tick this box for you.
+4. **Sign off.** At the bottom is the sign-off statement. On this page it is plain text starting
+   with `- [ ]`. If the statement is true, **type an `x` between the brackets** so it reads
+   `- [x]`. Don't change any other words. (You can also create the pull request first and then
+   click the box on the pull request's page.)
 5. Click **Create pull request**.
 
 ## 8. What happens next
 
 - **The checks run.** On your first pull request a maintainer approves the run first. The check
   uses the validator from the main branch, never the copy in your pull request.
-- **Read the result** under the pull request's **Checks** tab, in the run's summary. The full
-  result and the preview images are attached to the run as `validation-results`. If it fails, fix
-  the folder, commit and push again; the check reruns. If you only forgot the sign-off, editing the
-  description reruns it too.
-- **A maintainer reviews** the previews for the four points in step 5 and the content policy, then
+- **Read the result** under the pull request's **Checks** tab, in the run's summary. To see the
+  preview images, download `validation-results` from the run's summary page (you need to be signed
+  in) and unzip it. If it fails, fix the folder, commit and push again; the check reruns. If you
+  only forgot the sign-off, ticking the box reruns it too.
+- **A maintainer reviews** the previews for the five points in step 5 and the content policy, then
   merges.
 - **It goes live.** After the merge the site rebuilds, and your asset appears on it within a few
   minutes, with your credit.
@@ -245,20 +318,20 @@ ignored on purpose.
 ## Compositions
 
 A composition places pinned asset versions in one scene; it holds no geometry of its own. Put a
-`composition.json` in `compositions/YOUR-HANDLE/<slug>/v1/`; the spec's Compositions section has a
+`composition.json` in `compositions/yourname/<slug>/v1/`; the spec's Compositions section has a
 full example. Each item gives an `asset` (like `mattashes/apple-red@1`), a `position` in metres, a
 `rotation` as a quaternion `[x, y, z, w]`, and an optional `scale` (keep it between 0.5 and 2). The
 whole scene rests on y = 0 with its footprint centred. Validate it the same way:
 
 ```bash
-npx propcommons validate compositions/YOUR-HANDLE/<slug>/v1
+npx propcommons validate compositions/yourname/<slug>/v1
 ```
 
 See `compositions/mattashes/fruit-bowl/v1/composition.json` for a working one.
 
 ## Rules that can't be broken
 
-- CC0 1.0 only, and the sign-off is made by a person.
+- CC0 1.0 only, and the sign-off is confirmed by a person.
 - Nothing from the content policy's list.
 - Only your own handle's folders, and never a change to a merged version.
 - Assets are data: a `.glb` and a JSON file. Never add scripts, Blender files or add-ons. Link

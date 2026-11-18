@@ -35,10 +35,10 @@ hand, and goes step by step from a fresh clone to an open pull request. The site
 [Wanted page](https://propcommons.github.io/propcommons/wanted/) lists what the kit needs.
 
 The rules are in the spec: [`spec/SPEC.md`](spec/SPEC.md). The validator checks almost all of them
-and tells you exactly what to fix:
+and tells you exactly what to fix. Inside your clone, after `npm ci`:
 
 ```bash
-npx propcommons validate assets/alice/strawberry-whole/v1
+npx propcommons validate assets/mattashes/lemon/v1
 ```
 
 ## What's in this repository

@@ -14,6 +14,7 @@ import {
   checkPullRequest,
   findRepoRoot,
   initAsset,
+  isPlaceholderModel,
   parseNameStatus,
   type RuleResult,
   type SizeClass,
@@ -68,7 +69,14 @@ async function cmdValidate(args: string[]): Promise<number> {
     results.push(await validateFolder(folder, { root: findRepoRoot(folder) }));
   if (values.json)
     console.log(JSON.stringify(results.length === 1 ? results[0] : results, null, 2));
-  else for (const r of results) printResult(r);
+  else
+    positionals.forEach((folder, i) => {
+      printResult(results[i] as ValidationResult);
+      if (isPlaceholderModel(findRepoRoot(folder), folder))
+        console.log(
+          "  note    model.glb is still the placeholder box from `propcommons init`. Replace it with your own model; a pull request with the placeholder is refused.",
+        );
+    });
   return results.every((r) => r.pass) ? 0 : 1;
 }
 
@@ -109,8 +117,12 @@ async function cmdInit(args: string[]): Promise<number> {
   if (values.json) console.log(JSON.stringify({ path: rel }));
   else {
     console.log(`Created ${rel}`);
-    console.log("Replace model.glb with your model, edit asset.json, then run:");
-    console.log(`  propcommons validate ${rel}`);
+    console.log("Next:");
+    console.log("  1. Replace model.glb with your model (it is a 10 cm placeholder box).");
+    console.log(
+      "  2. Check asset.json, especially ai_assisted (true if any AI tool helped) and tools.",
+    );
+    console.log(`  3. npx propcommons validate ${rel}`);
   }
   return 0;
 }

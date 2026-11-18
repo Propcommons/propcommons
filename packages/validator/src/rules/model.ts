@@ -114,14 +114,20 @@ const sizeClass: Rule = ({ bounds, sizeClass }) => {
     ? longest < b.minLongestSide_m - TOL.length_m
     : longest <= b.minLongestSide_m - TOL.length_m;
   const tooBig = longest > b.maxLongestSide_m + TOL.length_m;
-  return tooSmall || tooBig
-    ? [
-        result("SIZE-CLASS", longest, [b.minLongestSide_m, b.maxLongestSide_m], {
-          class: sizeClass,
-          limit: classRange(sizeClass),
-        }),
-      ]
-    : [];
+  if (!tooSmall && !tooBig) return [];
+  // Within 5% of the edge: most likely meant for this class, just a little too big or small.
+  const edge = tooBig ? b.maxLongestSide_m : b.minLongestSide_m;
+  const near =
+    Math.abs(longest - edge) <= edge * 0.05
+      ? ` It is only ${round(Math.abs(longest - edge) * 100, 1)} cm ${tooBig ? "over" : "under"} the ${sizeClass} limit of ${edge} m; if it is meant to be ${sizeClass}, make it slightly ${tooBig ? "smaller" : "larger"}.`
+      : "";
+  return [
+    result("SIZE-CLASS", longest, [b.minLongestSide_m, b.maxLongestSide_m], {
+      class: sizeClass,
+      limit: classRange(sizeClass),
+      near,
+    }),
+  ];
 };
 
 const originY: Rule = ({ bounds }) => {
@@ -299,7 +305,10 @@ const texOrm: Rule = ({ doc }) => {
 
 const texDensity: Rule = ({ texelDensity }) => [
   result("TEX-DENSITY", texelDensity, null, {
-    measured: texelDensity === null ? "not measurable (no textured triangles)" : texelDensity,
+    measured:
+      texelDensity === null
+        ? "not measurable, because nothing is textured"
+        : `${texelDensity.toLocaleString("en-US")} px/m`,
   }),
 ];
 

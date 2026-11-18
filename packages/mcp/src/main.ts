@@ -1,13 +1,21 @@
 #!/usr/bin/env node
 // Starts the Prop Commons MCP server over stdio. Run from a clone of the repository:
 //   node packages/mcp/src/main.ts [--root <repository>]
+import { existsSync } from "node:fs";
+import path from "node:path";
 import { parseArgs } from "node:util";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { findRepoRoot } from "@propcommons/validator";
 import { createServer } from "./server.ts";
 
 const { values } = parseArgs({ options: { root: { type: "string" } } });
-const root = values.root ?? process.env.PROPCOMMONS_ROOT ?? findRepoRoot(process.cwd());
+// The repository this server belongs to: --root, then PROPCOMMONS_ROOT, then the clone this file
+// is in (so MCP clients that start servers from any folder work), then the current folder.
+const ownClone = path.resolve(import.meta.dirname, "../../..");
+const root =
+  values.root ??
+  process.env.PROPCOMMONS_ROOT ??
+  (existsSync(path.join(ownClone, "project.config.json")) ? ownClone : findRepoRoot(process.cwd()));
 const server = createServer({ root });
 await server.connect(new StdioServerTransport());
 // Nothing else may write to stdout: it carries the protocol.

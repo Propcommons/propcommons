@@ -151,7 +151,8 @@ const signed = `## Sign-off\n\n- [x] ${SIGNOFF_STATEMENT}\n`;
 function addAsset(fork: string, author: string, slug: string, manifestExtra: object = {}) {
   const dir = path.join(fork, "assets", author, slug, "v1");
   mkdirSync(dir, { recursive: true });
-  cpSync(path.join(fork, "template/model.glb"), path.join(dir, "model.glb"));
+  // A real model (the lemon seed), not init's placeholder box, which the check refuses.
+  cpSync(path.join(fork, "assets/mattashes/lemon/v1/model.glb"), path.join(dir, "model.glb"));
   const m = JSON.parse(readFileSync(path.join(fork, "template/asset.json"), "utf8"));
   Object.assign(m, {
     id: `${author}/${slug}`,
@@ -250,6 +251,30 @@ describe("simulated fork pull request", () => {
     expect(r.summary).not.toMatch(/<[a-z]/i);
     expect(r.summary).toContain(
       "assets/alice/spoon/v1".replace(/[/.-]/g, (c) => (c === "/" ? "/" : `\\${c}`)),
+    );
+  });
+
+  it("refuses the placeholder model from init, and lists stray files in a mixed pull request", () => {
+    const sha = openPr((fork) => {
+      addAsset(fork, "alice", "teapot");
+      cpSync(
+        path.join(fork, "template/model.glb"),
+        path.join(fork, "assets/alice/teapot/v1/model.glb"),
+      );
+    });
+    const r = runCheck(sha, "alice", signed);
+    expect(r.code).toBe(1);
+    expect(r.result.problem).toContain("placeholder box");
+    const mixed = openPr((fork) => {
+      addAsset(fork, "alice", "kettle");
+      writeFileSync(
+        path.join(fork, "package.json"),
+        `${readFileSync(path.join(fork, "package.json"), "utf8")}\n`,
+      );
+    });
+    const m = runCheck(mixed, "alice", signed);
+    expect(m.result.problem).toContain(
+      "These files are not in assets/ or compositions/: package.json",
     );
   });
 });

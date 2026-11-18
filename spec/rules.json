@@ -111,7 +111,7 @@
       "title": "The longest side falls inside the declared size class",
       "message": "The longest side is {measured} m, outside the {class} range of {limit} m.",
       "unit": "m",
-      "hint": "If the model is the right size, change size_class in asset.json. If it is about 100 times too big or small, it was exported in centimetres: rescale to metres and apply the scale."
+      "hint": "If the model is the right size, change size_class in asset.json.{near} If it is about 100 times too big or small, it was exported in centimetres: rescale to metres and apply the scale."
     },
     {
       "id": "ORIGIN-Y",
@@ -233,7 +233,7 @@
       "applies": ["asset"],
       "runner": "validate",
       "title": "Texel density is measured",
-      "message": "Texel density is {measured} px/m.",
+      "message": "Texel density: {measured}.",
       "unit": "px/m",
       "hint": "No limit yet in 0.1; this number helps match the rest of the kit."
     },
@@ -298,8 +298,8 @@
       "applies": ["asset", "composition"],
       "runner": "check-pr",
       "title": "The pull request carries the sign-off statement",
-      "message": "The pull request description does not contain the sign-off statement with its box ticked.",
-      "hint": "Edit the pull request description: keep the sign-off statement from the template word for word and tick its box. A person must confirm it, not an agent."
+      "message": "{detail}",
+      "hint": "In the pull request description, find the sign-off statement at the bottom and change its \"- [ ]\" to \"- [x]\" (or click the box on the pull request page). Keep the wording exactly as in the template. A person must confirm it: tick it yourself, or confirm it to your agent, which ticks it for you."
     },
     {
       "id": "CMP-SCHEMA",

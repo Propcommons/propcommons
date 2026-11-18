@@ -41,7 +41,13 @@ from mathutils import Matrix, Vector
 
 
 def parse_args():
-    argv = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
+    if "--" not in sys.argv:
+        fail(
+            'Put a lone "--" before this script\'s options, so Blender passes them on, e.g.\n'
+            "  blender --background scene.blend --python tools/blender/export_asset.py -- "
+            "--collection Asset --out assets/you/your-asset/v1"
+        )
+    argv = sys.argv[sys.argv.index("--") + 1 :]
     p = argparse.ArgumentParser(prog="export_asset.py", description="Export a Prop Commons asset.")
     p.add_argument("--collection", default="Asset")
     p.add_argument("--out", required=True)
@@ -62,6 +68,33 @@ def mesh_objects(collection):
         if obj.type == "MESH" and obj not in seen:
             seen.append(obj)
     return seen
+
+
+def warn_procedural_colours(objects):
+    """glTF carries image textures and plain colours only. Colours made with other nodes (noise,
+    colour ramps, procedural wood) are dropped on export, so the asset comes out plain."""
+    warned = set()
+    for obj in objects:
+        for slot in obj.material_slots:
+            mat = slot.material
+            if mat is None or mat.name in warned or not getattr(mat, "node_tree", None):
+                continue
+            for node in mat.node_tree.nodes:
+                if node.type != "BSDF_PRINCIPLED":
+                    continue
+                for socket_name in ("Base Color", "Roughness", "Metallic", "Normal"):
+                    socket = node.inputs.get(socket_name)
+                    if socket is None or not socket.is_linked:
+                        continue
+                    source = socket.links[0].from_node
+                    if source.type not in ("TEX_IMAGE", "NORMAL_MAP", "SEPARATE_COLOR", "SEPRGB"):
+                        print(
+                            f'Warning: material "{mat.name}" gets its {socket_name} from a '
+                            f'"{source.name}" node. glTF only carries image textures and plain '
+                            "values, so this will export without it. Bake it to an image texture "
+                            "(power-of-two size), or use a plain value."
+                        )
+                        warned.add(mat.name)
 
 
 def evaluated_copy(obj, depsgraph):
@@ -166,6 +199,7 @@ def main():
     if not sources:
         fail(f'The collection "{args.collection}" has no mesh objects.')
 
+    warn_procedural_colours(sources)
     os.makedirs(args.out, exist_ok=True)
     depsgraph = bpy.context.evaluated_depsgraph_get()
     temp = bpy.data.collections.new("PropCommonsExport")

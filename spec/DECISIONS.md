@@ -188,3 +188,35 @@ build choices, not spec changes: any of them can be reversed by the maintainer.
   compositions. `tools/smoke/godot_runtime.sh` tests it from a real game run (`check`), from editor
   mode (`check-editor`), and renders a composition (`render`); the first two run in
   `test/smoke.test.ts` wherever Godot is installed.
+
+## Contributor experience (after the first newcomer test, 18 November 2026)
+
+- **The sign-off can be confirmed through an agent.** The brief's `submit` design treats the
+  person's explicit yes in chat as the sign-off, with the template and the reviewer as backstop.
+  The docs now say the same: tick it yourself, or confirm it to your agent, which ticks it for you.
+- **PR-SIGNOFF ignores line wrapping** and says whether the statement is missing or only
+  unticked. Its message became a template (`{detail}`); the rule ID and level are unchanged.
+- **init's placeholder model is caught without a new rule.** Adding a rule ID is a spec change, so
+  instead `propcommons validate` prints a note, the MCP `validate` adds a second message (its JSON
+  stays identical to the CLI's), `submit` refuses, and `check-pr` fails the pull request with a
+  problem message when a model's SHA-256 matches `template/model.glb`. A future spec version could
+  make this a rule.
+- **A mixed pull request names the files** outside `assets/` and `compositions/` and says how to
+  put them back.
+- **SIZE-CLASS adds a hint when the model is within 5% of the edge** of its declared class.
+- **MCP `init_asset` requires `ai_assisted` and `tools`**, so agent-made assets declare it.
+- **`submit` refuses a folder under a handle other than the `gh` login**, fills in "How it was
+  made" from the manifest, and pushes with gh's credentials for that one command instead of
+  changing the user's global git configuration.
+- **The MCP server finds its own clone** from its file location, so clients that start servers
+  from another folder work; `--root` and `PROPCOMMONS_ROOT` still override it.
+- **`.npmrc` turns off npm's audit and funding messages and enforces the Node version** from
+  `package.json`, so `npm ci` doesn't suggest `npm audit fix` and an old Node fails with a clear
+  message.
+- **Gallery cards use a fifth, site-only preview image** (`thumb.png`, the asset alone). The four
+  review images keep the scale cube the spec asks for; CI still renders only those four.
+- **Claiming a Wanted entry is a GitHub issue** from the "Claim a wanted asset" form, labelled
+  `claim`. The site links to it and to a search for the entry's ID; it makes no requests to GitHub
+  itself.
+- **The spec page is rendered from SPEC.md** with `marked` (pinned) at build time; the raw `.md`
+  stays alongside for agents.

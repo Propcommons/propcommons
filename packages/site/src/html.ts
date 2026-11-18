@@ -56,6 +56,13 @@ export const IMPORT_MAP = (base: string) =>
 
 const sha256Base64 = (s: string) => createHash("sha256").update(s).digest("base64");
 
+let repoUrl = "https://github.com/";
+
+/** The repository's GitHub address, linked from every page's header and footer. */
+export function setRepoUrl(url: string): void {
+  repoUrl = url;
+}
+
 export interface PageOptions {
   base: string;
   title: string;
@@ -67,7 +74,7 @@ export interface PageOptions {
   importMap?: boolean;
   /** Load the model-viewer bundle. */
   modelViewer?: boolean;
-  active?: "gallery" | "compositions" | "wanted" | "about";
+  active?: "gallery" | "compositions" | "wanted" | "contribute" | "about";
 }
 
 export function page(o: PageOptions): string {
@@ -110,7 +117,9 @@ ${(o.scripts ?? []).map((s) => html`<script ${raw(s.module === false ? "defer" :
     ${nav("gallery", "", "Assets")}
     ${nav("compositions", "compositions/", "Compositions")}
     ${nav("wanted", "wanted/", "Wanted")}
+    ${nav("contribute", "contribute/", "Contribute")}
     ${nav("about", "about/", "About")}
+    <a href="${repoUrl}">GitHub</a>
   </nav>
 </header>
 <main>
@@ -118,7 +127,7 @@ ${o.body}
 </main>
 <footer class="site">
   <p>Assets and compositions are <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a>: free to use for anything, no credit required. The spec text is CC BY 4.0 and the code is MIT.
-  Machine-readable: <a href="${o.base}index.json">index.json</a> · <a href="${o.base}llms.txt">llms.txt</a> · <a href="${o.base}spec/0.1/SPEC.md">spec</a></p>
+  <a href="${o.base}contribute/">Contribute</a> · <a href="${o.base}spec/0.1/">The spec</a> · <a href="${repoUrl}">GitHub</a> · For tools and agents: <a href="${o.base}index.json">index.json</a> · <a href="${o.base}llms.txt">llms.txt</a></p>
 </footer>
 </body>
 </html>`)}

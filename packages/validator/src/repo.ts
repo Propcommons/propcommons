@@ -1,6 +1,8 @@
 // Repository-level operations shared by the command line, the MCP server and CI:
 // finding the repository root, creating a new asset from the template, running the pull-request
 // checks together with folder validation, and building index.json.
+
+import { createHash } from "node:crypto";
 import {
   copyFileSync,
   existsSync,
@@ -129,6 +131,27 @@ export interface PullRequestInput {
   body: string;
 }
 
+function sha256File(file: string): string {
+  return createHash("sha256").update(readFileSync(file)).digest("hex");
+}
+
+function isRegularFile(file: string): boolean {
+  try {
+    return lstatSync(file).isFile();
+  } catch {
+    return false;
+  }
+}
+
+/** True when a folder's model.glb is still the placeholder that `init` copies from template/. */
+export function isPlaceholderModel(root: string, folder: string): boolean {
+  const template = path.join(root, "template", "model.glb");
+  const model = path.join(folder, "model.glb");
+  return (
+    isRegularFile(template) && isRegularFile(model) && sha256File(model) === sha256File(template)
+  );
+}
+
 /** Changed paths (or any folder above them) that are symbolic links in the head checkout. */
 function symlinksIn(headRoot: string, changed: ChangedFile[]): string[] {
   const found = new Set<string>();
@@ -159,21 +182,37 @@ export async function checkPullRequest(input: PullRequestInput): Promise<PullReq
   const links = symlinksIn(input.headRoot, input.changed);
   if (links.length)
     problem = `Symbolic links are not allowed in pull requests: ${links.join(", ")}. Replace them with the real files.`;
-  else if (pr.kind === "mixed")
-    problem =
-      "This pull request changes assets and other files together. Please split it: one pull request that only adds asset or composition folders, and another for everything else.";
-  else if (pr.kind === "code")
+  else if (pr.kind === "mixed") {
+    const other = input.changed
+      .map((c) => c.path)
+      .filter((p) => !p.startsWith("assets/") && !p.startsWith("compositions/"));
+    problem = `This pull request changes assets and other files together. Please split it: one pull request that only adds asset or composition folders, and another for everything else. These files are not in assets/ or compositions/: ${other.join(", ")}. To take them out of this pull request, put them back as they are on the main branch (for example: git checkout upstream/main -- ${other[0] ?? "<file>"}), commit, and push.`;
+  } else if (pr.kind === "code")
     problem = "This pull request changes no assets; it is checked by code CI.";
   const folders: ValidationResult[] = [];
+  const placeholders: string[] = [];
   if (pr.kind === "assets") {
+    const template = path.join(input.baseRoot, "template", "model.glb");
+    const templateHash = existsSync(template) ? sha256File(template) : null;
     for (const rel of pr.folders) {
       const dir = path.join(input.headRoot, rel);
-      if (isRealDir(dir)) folders.push(await validateFolder(dir, { root: input.headRoot }));
+      if (!isRealDir(dir)) continue;
+      folders.push(await validateFolder(dir, { root: input.headRoot }));
+      const model = path.join(dir, "model.glb");
+      if (templateHash && isRegularFile(model) && sha256File(model) === templateHash)
+        placeholders.push(rel);
     }
   }
+  if (!problem && placeholders.length)
+    problem = `${placeholders.join(", ")} still has the placeholder box from \`propcommons init\` as its model.glb. Replace it with your own model, then commit and push.`;
   return {
     spec: SPEC_VERSION,
-    pass: !links.length && pr.kind === "assets" && pr.pass && folders.every((f) => f.pass),
+    pass:
+      !links.length &&
+      !placeholders.length &&
+      pr.kind === "assets" &&
+      pr.pass &&
+      folders.every((f) => f.pass),
     kind: pr.kind,
     problem,
     pr,
@@ -198,7 +237,7 @@ export interface IndexAsset {
   pass: boolean;
   path: string;
   files: { model: string; collision: string | null } | null;
-  previews: { front: string; side: string; top: string; kit: string } | null;
+  previews: { front: string; side: string; top: string; kit: string; thumb: string } | null;
   manifest: any;
   measured: any;
   sha256: string | null;
@@ -308,6 +347,7 @@ export async function buildIndex(root: string): Promise<Index> {
             side: `${previewBase}/side.png`,
             top: `${previewBase}/top.png`,
             kit: `${previewBase}/kit.png`,
+            thumb: `${previewBase}/thumb.png`,
           },
       manifest,
       measured: tomb ? null : r.measured,

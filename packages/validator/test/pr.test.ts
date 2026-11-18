@@ -88,4 +88,17 @@ describe("check-pr rules", () => {
     expect(run("carol", added("README.md")).kind).toBe("code");
     expect(run("carol", added("README.md", "assets/carol/spoon/v1/asset.json")).kind).toBe("mixed");
   });
+
+  it("accepts a sign-off an editor wrapped onto several lines", () => {
+    const words = SIGNOFF_STATEMENT.split(" ");
+    const wrapped = `- [x] ${words.slice(0, 12).join(" ")}\n  ${words.slice(12, 24).join(" ")}\n${words.slice(24).join(" ")}\n\nThanks!`;
+    expect(hasSignoff(wrapped)).toBe(true);
+  });
+
+  it("says when the statement is there but unticked", () => {
+    const r = run("carol", added("assets/carol/spoon/v1/asset.json"), signed.replace("[x]", "[ ]"));
+    expect(r.results[0]?.message).toContain("its box isn't ticked");
+    const missing = run("carol", added("assets/carol/spoon/v1/asset.json"), "hello");
+    expect(missing.results[0]?.message).toContain("doesn't contain the sign-off statement");
+  });
 });

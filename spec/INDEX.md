@@ -15,23 +15,23 @@ shape carefully: add fields freely, but never rename or remove one within a spec
 
 ## Asset entries
 
-| Field        | Meaning                                                                                                            |
-| ------------ | ------------------------------------------------------------------------------------------------------------------ |
-| `id`         | `author/slug`                                                                                                      |
-| `version`    | Whole number                                                                                                       |
-| `ref`        | Pinned ID, `author/slug@N`                                                                                         |
-| `latest`     | `true` for the highest version of this ID, taken down or not                                                       |
-| `taken_down` | `true` when the folder holds only `tombstone.json`                                                                 |
-| `pass`       | `true` when the folder passes every error-level rule                                                               |
-| `path`       | Folder path relative to the site root and the repository root, e.g. `assets/alice/mug/v1`                          |
-| `files`      | `{ "model": "<path>/model.glb", "collision": "<path>/collision.glb" or null }`; null when taken down               |
-| `previews`   | Paths of `front`, `side`, `top` and `kit` PNGs (1024 × 1024); null when taken down                                 |
-| `manifest`   | The asset's `asset.json`, unchanged; null when taken down                                                          |
-| `measured`   | The validator's `measured` block (see `result.schema.json`); null when taken down                                  |
-| `sha256`     | SHA-256 of `model.glb`, hex                                                                                        |
-| `credits`    | Effective credits: the asset's own, then those of its `parent` chain, one entry per person with their roles merged |
-| `tombstone`  | `{ "reason", "date", "by" }` when taken down, otherwise null                                                       |
-| `results`    | The validator's `results` list for this version (warnings and info included)                                       |
+| Field        | Meaning                                                                                                                                    |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `id`         | `author/slug`                                                                                                                              |
+| `version`    | Whole number                                                                                                                               |
+| `ref`        | Pinned ID, `author/slug@N`                                                                                                                 |
+| `latest`     | `true` for the highest version of this ID, taken down or not                                                                               |
+| `taken_down` | `true` when the folder holds only `tombstone.json`                                                                                         |
+| `pass`       | `true` when the folder passes every error-level rule                                                                                       |
+| `path`       | Folder path relative to the site root and the repository root, e.g. `assets/alice/mug/v1`                                                  |
+| `files`      | `{ "model": "<path>/model.glb", "collision": "<path>/collision.glb" or null }`; null when taken down                                       |
+| `previews`   | Paths of `front`, `side`, `top` and `kit` PNGs (1024 × 1024), plus `thumb` (the asset alone, for the site's gallery); null when taken down |
+| `manifest`   | The asset's `asset.json`, unchanged; null when taken down                                                                                  |
+| `measured`   | The validator's `measured` block (see `result.schema.json`); null when taken down                                                          |
+| `sha256`     | SHA-256 of `model.glb`, hex                                                                                                                |
+| `credits`    | Effective credits: the asset's own, then those of its `parent` chain, one entry per person with their roles merged                         |
+| `tombstone`  | `{ "reason", "date", "by" }` when taken down, otherwise null                                                                               |
+| `results`    | The validator's `results` list for this version (warnings and info included)                                                               |
 
 ## Composition entries
 

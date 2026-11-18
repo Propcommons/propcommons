@@ -67,7 +67,7 @@ export function pickNeighbours(root: string, self: Manifest, max = 2): Neighbour
 }
 
 export interface PreviewResult {
-  files: Record<(typeof PREVIEW_VIEWS)[number], string>;
+  files: Record<(typeof PREVIEW_VIEWS)[number], string> & { thumb?: string };
   neighbours: string[];
   bounds_m: [number, number, number];
 }
@@ -75,7 +75,7 @@ export interface PreviewResult {
 /** Renders the four previews of one asset version folder into outDir. */
 export async function renderPreviews(
   folder: string,
-  opts: { root?: string; outDir?: string } = {},
+  opts: { root?: string; outDir?: string; thumbnail?: boolean } = {},
 ): Promise<PreviewResult> {
   const dir = path.resolve(folder);
   const vp = parseVersionPath(dir);
@@ -124,6 +124,15 @@ export async function renderPreviews(
       writeFileSync(file, Buffer.from(data.slice("data:image/png;base64,".length), "base64"));
       files[view] = file;
     }
+    // The site also uses a fifth, optional image: the asset alone, for gallery cards.
+    if (opts.thumbnail && typeof shots.thumb === "string") {
+      const file = path.join(outDir, "thumb.png");
+      writeFileSync(
+        file,
+        Buffer.from(shots.thumb.slice("data:image/png;base64,".length), "base64"),
+      );
+      files.thumb = file;
+    }
     return { files, neighbours: neighbours.map((n) => n.ref), bounds_m: shots.bounds };
   } finally {
     await browser.close();
@@ -150,13 +159,23 @@ async function openScenePage(extra: [string, string][]) {
         : p.endsWith(".glb")
           ? "model/gltf-binary"
           : "application/octet-stream";
-  const browser = await chromium.launch({
-    args: [
-      "--use-angle=swiftshader",
-      "--enable-unsafe-swiftshader",
-      "--disable-gpu-driver-bug-workarounds",
-    ],
-  });
+  let browser: Awaited<ReturnType<typeof chromium.launch>>;
+  try {
+    browser = await chromium.launch({
+      args: [
+        "--use-angle=swiftshader",
+        "--enable-unsafe-swiftshader",
+        "--disable-gpu-driver-bug-workarounds",
+      ],
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (/Executable doesn't exist|playwright install/i.test(msg))
+      throw new UsageError(
+        "Previews need a headless browser that isn't installed yet. Run this once (about 200 MB), then try again:\n  npx playwright install --only-shell chromium",
+      );
+    throw e;
+  }
   const context = await browser.newContext({
     viewport: { width: 1024, height: 1024 },
     deviceScaleFactor: 1,

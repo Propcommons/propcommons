@@ -1,0 +1,27 @@
+name: Claim a wanted asset
+description: Say you're making something from the Wanted list, so others pick something else.
+title: "Claim: "
+labels: ["claim"]
+body:
+  - type: input
+    id: asset
+    attributes:
+      label: Which Wanted entry?
+      description: Its ID from the Wanted page, e.g. wooden-spoon.
+    validations:
+      required: true
+  - type: input
+    id: handle
+    attributes:
+      label: Your ID for it
+      description: Your GitHub handle in lower case, a slash, then the entry's ID, e.g. alice/wooden-spoon.
+    validations:
+      required: true
+  - type: input
+    id: when
+    attributes:
+      label: Roughly when you expect to open the pull request
+      placeholder: Within a week
+  - type: markdown
+    attributes:
+      value: If you stop working on it, close this issue so someone else can pick it up.

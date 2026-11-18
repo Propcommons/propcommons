@@ -271,3 +271,66 @@ canvas#composition {
 .list {
   padding-left: 20px;
 }
+.cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  align-items: center;
+  margin: 16px 0 8px;
+}
+.wanted {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+.wanted .card {
+  padding: 4px 16px 12px;
+}
+.wanted h2 {
+  margin: 12px 0 4px;
+}
+.wanted .meta {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+}
+.steps li {
+  margin-bottom: 8px;
+}
+.spec {
+  max-width: 80ch;
+}
+.spec table {
+  border-collapse: collapse;
+  display: block;
+  overflow-x: auto;
+  font-size: 0.92rem;
+}
+.spec th,
+.spec td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.spec pre {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  overflow-x: auto;
+  font-size: 0.85rem;
+}
+.spec blockquote {
+  margin: 16px 0;
+  padding: 8px 16px;
+  border-left: 4px solid var(--accent);
+  background: var(--panel);
+}

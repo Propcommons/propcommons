@@ -42,13 +42,37 @@ export const SIGNOFF_STATEMENT: string = (rulesFile as unknown as { signoffState
 
 const normalise = (s: string) => s.replace(/\s+/g, " ").trim();
 
-/** True when the body has a ticked checkbox line whose text is the sign-off statement. */
-export function hasSignoff(body: string): boolean {
+export type SignoffState = "ticked" | "unticked" | "missing";
+
+/**
+ * Finds the sign-off statement in a pull-request description: a checkbox item ("- [x] ..." or
+ * "- [ ] ...") whose text is the statement. Spaces and line breaks don't matter, so a statement an
+ * editor wrapped onto several lines still counts.
+ */
+export function signoffState(body: string): SignoffState {
   const want = normalise(SIGNOFF_STATEMENT);
-  return body.split(/\r?\n/).some((line) => {
-    const m = /^\s*[-*]\s*\[[xX]\]\s*(.+)$/.exec(line);
-    return m ? normalise(m[1] ?? "") === want : false;
-  });
+  const lines = body.split(/\r?\n/);
+  let found: SignoffState = "missing";
+  for (let i = 0; i < lines.length; i++) {
+    const m = /^\s*[-*]\s*\[( |x|X)\]\s*(.*)$/.exec(lines[i] ?? "");
+    if (!m) continue;
+    let text = m[2] ?? "";
+    // Continuation lines: everything up to a blank line or the next list item or heading.
+    for (let j = i + 1; j < lines.length; j++) {
+      const next = lines[j] ?? "";
+      if (!next.trim() || /^\s*([-*]\s|#|\d+\.\s)/.test(next)) break;
+      text += ` ${next}`;
+    }
+    if (normalise(text) !== want) continue;
+    if (m[1] !== " ") return "ticked";
+    found = "unticked";
+  }
+  return found;
+}
+
+/** True when the body carries the sign-off statement with its box ticked. */
+export function hasSignoff(body: string): boolean {
+  return signoffState(body) === "ticked";
 }
 
 export function classifyChanges(changed: ChangedFile[]): "assets" | "code" | "mixed" {
@@ -118,8 +142,18 @@ export function checkPr(input: PrInput): PrCheckResult {
   }
 
   // PR-SIGNOFF: only pull requests that add or change assets need the statement.
-  if (assetChanges.length && !hasSignoff(input.body))
-    results.push(result("PR-SIGNOFF", false, true));
+  if (assetChanges.length) {
+    const state = signoffState(input.body);
+    if (state !== "ticked")
+      results.push(
+        result("PR-SIGNOFF", false, true, {
+          detail:
+            state === "unticked"
+              ? "The sign-off statement is in the pull request description, but its box isn't ticked."
+              : "The pull request description doesn't contain the sign-off statement from the template.",
+        }),
+      );
+  }
 
   return {
     spec: SPEC_VERSION,

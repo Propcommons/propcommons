@@ -76,8 +76,12 @@ window.renderJob = async (job) => {
     out[name] = snapshot(renderer, scene, frameCamera(box, dir));
   }
 
-  // Kit view: the asset between up to two neighbours of the same size class.
+  // Thumbnail for the site's gallery: the asset alone, without the scale cube.
   scene.remove(cube);
+  fitStage(stage, assetBox);
+  out.thumb = snapshot(renderer, scene, frameCamera(assetBox, viewDirection("front"), 1, 1.1));
+
+  // Kit view: the asset between up to two neighbours of the same size class.
   const row = [];
   const neighbours = [];
   for (const url of job.neighbours ?? []) neighbours.push(await loadModel(url));
