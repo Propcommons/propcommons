@@ -36,9 +36,11 @@ npx playwright install --only-shell chromium
 ```
 
 The last one is only needed for preview images (about 200 MB). Ignore npm's warnings and never run
-`npm audit fix`: it changes project files, and the pull request would be refused. If `git commit`
-fails because git doesn't know the person's name, ask them for it and set `git config user.name`
-and `git config user.email` (their GitHub noreply address from https://github.com/settings/emails).
+`npm audit fix`: it changes project files, and the pull request would be refused. Before committing, make sure git knows the person's name and email: if `git config user.email`
+prints nothing, ask them, then set both with `git config --global user.name "…"` and
+`git config --global user.email "…"` (their GitHub noreply address from
+https://github.com/settings/emails), as CONTRIBUTING.md step 1 does. `submit` refuses until both
+are set.
 
 ## Making an asset
 
@@ -82,16 +84,22 @@ your client can't find `node`, give the full path that `which node` prints as `c
 The server finds its clone on its own, so `--root` is only a safeguard. `PROPCOMMONS_ROOT` works
 too.
 
-The loop: `get_spec` → `init_asset` (with `ai_assisted: true` and yourself in `tools`) → put the
-real model at `model.glb` → `validate` → fix every error → `validate` again until `pass` is true →
-`render_preview` and look at the images (proportions, resting pose, facing +Z, colours, fit with its
-neighbours) → show the person the sign-off statement and get their yes → `submit`.
+The loop: `get_spec` → `init_asset` (with `ai_assisted: true` and yourself in `tools`; the person's
+credit role defaults to `directed`) → put the real model at `model.glb` → `validate` → fix every
+error → `validate` again until `pass` is true → `render_preview` → show the person the images
+(they are saved in `previews/<author>/<slug>/v<N>/`; give them that folder) and check proportions,
+resting pose, facing +Z, colours and fit with its neighbours together → show the person the sign-off
+statement and get their yes → `submit`. A `PASS` means the file is well-formed, not that it looks
+right: the previews are the real check.
 
 **Where the model comes from:** with Blender, build the object there and export it with
 `tools/blender/export_asset.py` (see CONTRIBUTING.md). Without Blender, write a script that builds
-the mesh with `@gltf-transform/core` (installed by `npm ci`); `tools/seed/build.ts` shows how, with
-helpers in `tools/lib/`. Keep the script out of the pull request; if the person wants to share it,
-they publish it elsewhere and link it in `source_url`.
+the mesh with `@gltf-transform/core` (installed by `npm ci`). Put it in the `work/` folder of the
+clone, which git ignores, so it can import the project's packages but never ends up in the pull
+request. `tools/lib/mesh.ts` has shape helpers (`box`, `lathe` for round objects, `extrude`,
+`ground` to put a model on the ground and centre it, `fixWinding`), and `tools/seed/build.ts` shows
+them in use. If the person wants to share the script, they publish it elsewhere and link it in
+`source_url`.
 
 ### With the command line only
 

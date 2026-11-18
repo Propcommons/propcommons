@@ -194,6 +194,8 @@ describe("submit", () => {
     const c = await connect((cmd, args) => {
       seen.push(`${cmd} ${args.slice(0, 2).join(" ")}`);
       if (cmd === "gh" && args[0] === "api") return "alice\n";
+      if (cmd === "git" && args[0] === "config")
+        return args[2] === "user.name" ? "Alice\n" : "alice@example.invalid\n";
       if (cmd === "gh" && args[0] === "pr")
         return "https://github.com/propcommons/propcommons/pull/1\n";
       if (cmd === "gh" && args[0] === "repo" && args[1] === "clone") {
@@ -209,11 +211,13 @@ describe("submit", () => {
     expect(seen).toEqual([
       "gh auth status",
       "gh api user",
+      "git config --get",
+      "git config --get",
       "gh repo fork",
       "gh repo clone",
       "git checkout -b",
       `git --work-tree ${repo}`,
-      "git commit -m",
+      "git -c user.name=Alice",
       "git -c credential.helper=",
       "gh pr create",
     ]);
@@ -230,5 +234,19 @@ describe("submit", () => {
     const r = await call("submit", { folder: "assets/bob/cup/v1", signoff_confirmed: true }, c);
     expect(r.isError).toBe(true);
     expect(textOf(r)).toContain("placeholder box");
+  });
+
+  it("refuses before forking when git has no name or email", async () => {
+    const seen: string[] = [];
+    const c = await connect((cmd, args) => {
+      seen.push(`${cmd} ${args[0]}`);
+      if (cmd === "gh" && args[0] === "api") return "alice\n";
+      if (cmd === "git" && args[0] === "config") throw new Error("not set");
+      return "";
+    });
+    const r = await call("submit", { folder: "assets/alice/mug/v1", signoff_confirmed: true }, c);
+    expect(r.isError).toBe(true);
+    expect(textOf(r)).toContain("git config --global user.name");
+    expect(seen).not.toContain("gh repo");
   });
 });

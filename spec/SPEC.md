@@ -218,7 +218,7 @@ Eight more rules cover what the schema can't see: the folder, the history and th
 | VER-NEXT     | A new version is 1, or exactly one higher than the latest merged version                         | error |
 | VER-FROZEN   | The pull request changes no file inside a version folder that is already merged                  | error |
 | PR-OWNER     | The pull request adds files only under the contributor's own handle                              | error |
-| PR-SIGNOFF   | The pull request carries the sign-off statement                                                  | error |
+| PR-SIGNOFF   | The pull request carries the sign-off statement, with its box ticked                             | error |
 
 ## Compositions
 

@@ -70,15 +70,36 @@ def mesh_objects(collection):
     return seen
 
 
-def warn_procedural_colours(objects):
-    """glTF carries image textures and plain colours only. Colours made with other nodes (noise,
-    colour ramps, procedural wood) are dropped on export, so the asset comes out plain."""
-    warned = set()
+WARNINGS = []
+
+
+def warn(message):
+    WARNINGS.append(message)
+    print(f"Warning: {message}")
+
+
+def _value(node, name):
+    """A Principled BSDF input's value, or None when Blender doesn't have that input."""
+    socket = node.inputs.get(name)
+    if socket is None or socket.is_linked:
+        return None
+    return socket.default_value
+
+
+def check_materials(objects):
+    """Warns about material settings that won't come through the way they look in Blender.
+
+    glTF carries image textures and plain values only, so colours built from other nodes (noise,
+    colour ramps, procedural wood) are dropped. Some Principled BSDF settings export as glTF
+    extensions that this spec doesn't allow (only the three glass ones are), so validate would
+    fail with FILE-EXT. Each warning names the Blender setting to change."""
+    seen = set()
     for obj in objects:
         for slot in obj.material_slots:
             mat = slot.material
-            if mat is None or mat.name in warned or not getattr(mat, "node_tree", None):
+            if mat is None or mat.name in seen or not getattr(mat, "node_tree", None):
                 continue
+            seen.add(mat.name)
             for node in mat.node_tree.nodes:
                 if node.type != "BSDF_PRINCIPLED":
                     continue
@@ -88,13 +109,28 @@ def warn_procedural_colours(objects):
                         continue
                     source = socket.links[0].from_node
                     if source.type not in ("TEX_IMAGE", "NORMAL_MAP", "SEPARATE_COLOR", "SEPRGB"):
-                        print(
-                            f'Warning: material "{mat.name}" gets its {socket_name} from a '
-                            f'"{source.name}" node. glTF only carries image textures and plain '
-                            "values, so this will export without it. Bake it to an image texture "
-                            "(power-of-two size), or use a plain value."
+                        warn(
+                            f'material "{mat.name}" gets its {socket_name} from a "{source.name}" '
+                            "node. glTF only carries image textures and plain values, so it will "
+                            "export without it (a plain white or grey surface). Bake it to an image "
+                            "texture (power-of-two size), or use a plain value."
                         )
-                        warned.add(mat.name)
+                not_allowed = [
+                    ("Coat Weight", lambda v: v > 0, "a clear coat (KHR_materials_clearcoat)", "set Coat Weight to 0; for a glossy glaze, lower Roughness instead"),
+                    ("Sheen Weight", lambda v: v > 0, "sheen (KHR_materials_sheen)", "set Sheen Weight to 0"),
+                    ("Anisotropic", lambda v: v > 0, "anisotropy (KHR_materials_anisotropy)", "set Anisotropic to 0"),
+                    ("Thin Film Thickness", lambda v: v > 0, "a thin film (KHR_materials_iridescence)", "set Thin Film Thickness to 0"),
+                    ("Specular IOR Level", lambda v: abs(v - 0.5) > 1e-3, "a specular level (KHR_materials_specular)", "set Specular IOR Level back to 0.5"),
+                    ("Specular Tint", lambda v: any(abs(c - 1.0) > 1e-3 for c in list(v)[:3]), "a specular tint (KHR_materials_specular)", "set Specular Tint back to white"),
+                    ("Emission Strength", lambda v: v > 1.0, "extra-bright emission (KHR_materials_emissive_strength)", "keep Emission Strength at 1 or below"),
+                ]
+                for socket_name, active, what, fix in not_allowed:
+                    value = _value(node, socket_name)
+                    if value is not None and active(value):
+                        warn(
+                            f'material "{mat.name}" uses {what}, which this spec doesn\'t allow; '
+                            f"validate will fail with FILE-EXT. In the Principled BSDF, {fix}."
+                        )
 
 
 def evaluated_copy(obj, depsgraph):
@@ -199,7 +235,7 @@ def main():
     if not sources:
         fail(f'The collection "{args.collection}" has no mesh objects.')
 
-    warn_procedural_colours(sources)
+    check_materials(sources)
     os.makedirs(args.out, exist_ok=True)
     depsgraph = bpy.context.evaluated_depsgraph_get()
     temp = bpy.data.collections.new("PropCommonsExport")
@@ -262,6 +298,13 @@ def main():
                 bpy.data.meshes.remove(mesh)
         bpy.data.collections.remove(temp)
 
+    if WARNINGS:
+        print()
+        print(f"{len(WARNINGS)} warning(s): the model may not come out the way it looks in Blender.")
+        for w in WARNINGS:
+            print(f"  - {w}")
+        print("Fix them in Blender, save, and run this script again.")
+        print()
     if not os.path.exists(os.path.join(args.out, "asset.json")):
         print("There is no asset.json yet. Create the folder with `npx propcommons init <you>/<slug>` first,")
         print("or copy template/asset.json and fill it in.")

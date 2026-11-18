@@ -74,7 +74,7 @@
       "runner": "validate",
       "title": "No required extensions, and only allowlisted extensions used",
       "message": "{file} uses extensions that are not allowed: {measured}.",
-      "hint": "Turn off compression (Draco, Meshopt, KTX2, WebP) and any extension other than {limit} in the exporter, then export again."
+      "hint": "Usually a material setting, not an exporter option, adds these. In Blender's Principled BSDF, set Coat Weight, Sheen Weight, Anisotropic and Thin Film Thickness to 0, Specular IOR Level to 0.5 and Specular Tint to white, and keep Emission Strength at 1 or below (tools/blender/export_asset.py warns about each). Also turn off compression (Draco, Meshopt, KTX2, WebP). Only {limit} are allowed."
     },
     {
       "id": "SCENE-ROOT",
@@ -297,7 +297,7 @@
       "level": "error",
       "applies": ["asset", "composition"],
       "runner": "check-pr",
-      "title": "The pull request carries the sign-off statement",
+      "title": "The pull request carries the sign-off statement, with its box ticked",
       "message": "{detail}",
       "hint": "In the pull request description, find the sign-off statement at the bottom and change its \"- [ ]\" to \"- [x]\" (or click the box on the pull request page). Keep the wording exactly as in the template. A person must confirm it: tick it yourself, or confirm it to your agent, which ticks it for you."
     },

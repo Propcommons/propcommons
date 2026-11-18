@@ -50,6 +50,8 @@ export interface InitOptions {
   tags?: string[];
   aiAssisted?: boolean;
   tools?: string[];
+  /** The author's credit roles; defaults to directed when AI-assisted, otherwise modeled. */
+  roles?: string[];
 }
 
 export class UsageError extends Error {}
@@ -82,7 +84,7 @@ export function initAsset(o: InitOptions): string {
     name: o.name ?? titleCase(slug),
     size_class: o.sizeClass ?? manifest.size_class,
     tags: o.tags ?? manifest.tags,
-    credits: [{ github: author, roles: ["modeled"] }],
+    credits: [{ github: author, roles: o.roles ?? (o.aiAssisted ? ["directed"] : ["modeled"]) }],
     ai_assisted: o.aiAssisted ?? manifest.ai_assisted,
     tools: o.tools ?? manifest.tools,
   });

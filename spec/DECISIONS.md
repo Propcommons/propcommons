@@ -234,3 +234,24 @@ build choices, not spec changes: any of them can be reversed by the maintainer.
   Three.js and Blender, with copy buttons. Sizes are shown in centimetres (metres above 1 m).
 - **Still no web fonts, framework or third-party requests**: system fonts, one stylesheet with
   colour tokens for light and dark, and the same content security policy.
+
+## After the second newcomer test (18 November 2026)
+
+- **`submit` carries the contributor's git name and email** (from their clone, global or local)
+  into the commit it makes in a fresh clone, and refuses before forking when they aren't set.
+- **The Blender export script warns about material settings** that export as glTF extensions this
+  spec doesn't allow (Coat, Sheen, Anisotropic, Thin Film, Specular level and tint, Emission
+  Strength above 1), names the setting to change, and repeats every warning in a summary at the
+  end. The FILE-EXT hint now says that material settings, not exporter options, usually cause it.
+- **MCP `render_preview` saves the images** in `previews/<author>/<slug>/v<N>/`, like the CLI, so
+  the person can look at them.
+- **The author's default credit role is `directed` when `ai_assisted` is true**, `modeled`
+  otherwise; `init_asset` takes an optional `roles`.
+- **"Merged" for `search_assets` prefers `upstream/main`**, since `gh repo fork --clone` makes the
+  fork `origin`.
+- **A `work/` folder is ignored by git**, for generator scripts that need the project's packages.
+  The seed generator's shape helpers moved to `tools/lib/mesh.ts`.
+- **PR-SIGNOFF's wording in SPEC.md** now says the statement must be ticked, which is what the
+  check has always required. The rule ID and level are unchanged.
+- **`packages/mcp/src/main.ts` is committed as executable**, so `npm ci` no longer shows it as
+  changed in a fresh clone.

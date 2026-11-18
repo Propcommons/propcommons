@@ -138,9 +138,9 @@ What to expect:
   `tools/seed/build.ts` does for the seed assets. The script doesn't go in your pull request; if you
   want to share it, publish it somewhere (a GitHub gist works) and put the link in `source_url`.
 - **It runs `validate` until it passes.** Each failure names a rule and says how to fix it.
-- **It renders previews. Look at them yourself:** is it the right size next to the scale cube, is
-  it resting the way it would on a table, are the colours right, and does it sit well beside its
-  neighbours?
+- **It renders previews. Look at them yourself:** they are saved in
+  `previews/yourname/<asset>/v1/`. Is it the right size next to the scale cube, is it resting the
+  way it would on a table, are the colours right, and does it sit well beside its neighbours?
 - **The sign-off.** Before `submit`, the agent must show you the sign-off statement word for word.
   If it is true and you say yes, that yes is your sign-off: `submit` ticks the box in the pull
   request for you. If it isn't true, say no.
@@ -173,6 +173,9 @@ Whatever tool you use, the result must be:
 - **Colours from image textures or plain values.** PNG or JPEG textures whose sides are powers of
   two (256, 512, 1024...), embedded in the file. Colours built from texture nodes (noise, colour
   ramps, procedural wood) **don't export**: bake them to an image first, or use a plain colour.
+- **A plain material.** In Blender's Principled BSDF, leave Coat, Sheen, Anisotropic, Thin Film and
+  Specular at their defaults, and Emission Strength at 1 or below: those settings export as glTF
+  extensions this spec doesn't allow. For a shiny glaze, lower Roughness instead of adding Coat.
 - **Plain glTF**: no Draco or Meshopt compression, no KTX2 or WebP textures. The only extensions
   allowed are the three glass ones: `KHR_materials_transmission`, `KHR_materials_volume` and
   `KHR_materials_ior`.
@@ -201,7 +204,8 @@ Whatever tool you use, the result must be:
 The script works on copies and never changes or saves your .blend. It applies modifiers and
 transforms, joins and triangulates the parts, puts the lowest point on the ground and centres the
 footprint, removes vertex colours, and writes `model.glb` (and `collision.glb` if you made one). It
-warns if a material's colour comes from nodes that won't export. Lines like "Draco is available"
+warns, and lists again at the end, any material setting that won't export as it looks
+(node-based colours, Coat, Sheen and the like). Fix those in Blender and export again. Lines like "Draco is available"
 are Blender saying what it could do; the script doesn't use compression.
 
 **Other tools:** export a binary glTF (`.glb`) to `assets/yourname/wooden-spoon/v1/model.glb`
@@ -236,7 +240,8 @@ Leave `spec`, `id`, `version` and `license` as `init` wrote them.
 npx propcommons validate assets/yourname/wooden-spoon/v1
 ```
 
-It prints `PASS` or `FAIL`. Every problem has a rule ID, what was measured, the limit, and a
+It prints `PASS` or `FAIL`. `PASS` means the file is well-formed, not that it looks right; the
+previews below are the real check. Every problem has a rule ID, what was measured, the limit, and a
 `fix:` line saying what to do. Fix them and run it again until it passes. Warnings don't block a
 pull request, but a reviewer will ask about them. If it says the model is still the placeholder
 box, your export went somewhere else. Add `--json` to get the full result as JSON.

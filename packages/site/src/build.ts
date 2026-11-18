@@ -498,12 +498,12 @@ function contributePage(o: SiteOptions, repo: string): string {
 <p><a class="button" href="${gh}/blob/main/CONTRIBUTING.md">Read the step-by-step guide</a></p>
 <h2>The steps</h2>
 <ol class="steps">
-  <li><strong>Set up once</strong>: a GitHub account, git, Node.js 26.13 or later, and the GitHub CLI signed in with <code>gh auth login</code>. Blender if you model in Blender.</li>
-  <li><strong>Get the project</strong>: <code>gh repo fork ${repo} --clone</code>, then <code>npm ci</code> in the folder.</li>
+  <li><strong>Set up once</strong>: a GitHub account, git, Node.js 26.13 or later, and the GitHub CLI signed in with <code>gh auth login</code>. Tell git your name and GitHub noreply email with <code>git config --global user.name</code> and <code>user.email</code>. Blender if you model in Blender.</li>
+  <li><strong>Get the project</strong>: <code>gh repo fork ${repo} --clone</code>, then <code>npm ci</code> in the folder, and <code>npx playwright install --only-shell chromium</code> once for preview images.</li>
   <li><strong>Pick something</strong> from the <a href="${o.base}wanted/">Wanted list</a> and claim it.</li>
   <li><strong>Start the folder</strong>: <code>npx propcommons init your-handle/your-asset</code>.</li>
   <li><strong>Make the model</strong> in metres, standing on the ground, with image textures or plain colours. From Blender, the export script does the fiddly parts.</li>
-  <li><strong>Check it</strong>: <code>npx propcommons validate</code> until it says PASS, then <code>npx propcommons preview</code> and look at the images.</li>
+  <li><strong>Check it</strong>: <code>npx propcommons validate</code> until it says PASS, then <code>npx propcommons preview</code> and look at the images. PASS means the file is well-formed; the images show whether it looks right.</li>
   <li><strong>Open a pull request</strong> that adds only your folder, and tick the sign-off yourself.</li>
 </ol>
 <h2>With a coding agent</h2>

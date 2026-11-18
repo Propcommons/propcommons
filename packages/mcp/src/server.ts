@@ -49,7 +49,8 @@ function git(root: string, args: string[]): string | null {
 
 /** The ref that stands for "merged": origin/main if present, else main, else HEAD. */
 function mergedRef(root: string): string | null {
-  for (const ref of ["origin/main", "main", "HEAD"])
+  // In a fork made with `gh repo fork --clone`, the main project is "upstream"; "origin" is the fork.
+  for (const ref of ["upstream/main", "origin/main", "main", "HEAD"])
     if (git(root, ["rev-parse", "--verify", "--quiet", ref])?.trim()) return ref;
   return null;
 }
@@ -129,9 +130,16 @@ export function createServer(o: ServerOptions): McpServer {
           .array(z.string())
           .min(1)
           .describe('Software and AI models used, e.g. ["Blender", "Claude"].'),
+        roles: z
+          .array(z.enum(["directed", "modeled", "sculpted", "textured", "coded", "scanned"]))
+          .min(1)
+          .optional()
+          .describe(
+            'The person\'s credit roles. Defaults to ["directed"] when ai_assisted is true (they directed the AI), otherwise ["modeled"].',
+          ),
       },
     },
-    async ({ author, slug, name, size_class, tags, ai_assisted, tools }) => {
+    async ({ author, slug, name, size_class, tags, ai_assisted, tools, roles }) => {
       try {
         const dir = initAsset({
           root,
@@ -141,6 +149,7 @@ export function createServer(o: ServerOptions): McpServer {
           tags,
           aiAssisted: ai_assisted,
           tools,
+          roles,
         });
         return json({ path: path.relative(root, dir).split(path.sep).join("/") });
       } catch (e) {
@@ -193,12 +202,17 @@ export function createServer(o: ServerOptions): McpServer {
     async ({ folder }) => {
       try {
         const dir = resolveFolder(root, folder);
-        const outDir = mkdtempSync(path.join(tmpdir(), "propcommons-mcp-preview-"));
+        // Saved where the person can open them too (previews/ is ignored by git), like the CLI.
+        const vp = parseVersionPath(dir);
+        const outDir = vp
+          ? path.join(root, "previews", vp.author, vp.slug, `v${vp.version}`)
+          : mkdtempSync(path.join(tmpdir(), "propcommons-mcp-preview-"));
         const r = await renderPreviews(dir, { root, outDir });
+        const rel = path.relative(root, outDir).split(path.sep).join("/");
         const content: Content[] = [
           {
             type: "text",
-            text: `Previews of ${folder}: front, side, top, kit${r.neighbours.length ? ` (beside ${r.neighbours.join(", ")})` : ""}. Measured size ${r.bounds_m.map((v) => v.toFixed(3)).join(" × ")} m.`,
+            text: `Previews of ${folder}: front, side, top, kit${r.neighbours.length ? ` (beside ${r.neighbours.join(", ")})` : ""}. Measured size ${r.bounds_m.map((v) => v.toFixed(3)).join(" × ")} m. The images are saved in ${vp ? rel : outDir}/ (front.png, side.png, top.png, kit.png): give the person that folder so they can look at them too.`,
           },
         ];
         for (const v of ["front", "side", "top", "kit"] as const)
@@ -207,7 +221,6 @@ export function createServer(o: ServerOptions): McpServer {
             data: readFileSync(r.files[v]).toString("base64"),
             mimeType: "image/png",
           });
-        rmSync(outDir, { recursive: true, force: true });
         return { content };
       } catch (e) {
         return text(
@@ -334,13 +347,33 @@ export function createServer(o: ServerOptions): McpServer {
             `Refused: ${vp.rel} is under the handle "${vp.author}", but gh is signed in as "${login}". Contributors add folders only under their own handle (rule PR-OWNER). Create the asset as ${login.toLowerCase()}/${vp.slug} instead.`,
             true,
           );
+        // The commit is made in a fresh clone, so carry over the name and email git uses in the
+        // contributor's own clone (set globally or just for that clone). Check before forking.
+        const gitConfig = (key: string) => {
+          try {
+            return run("git", ["config", "--get", key], root).trim();
+          } catch {
+            return "";
+          }
+        };
+        const name = gitConfig("user.name");
+        const email = gitConfig("user.email");
+        if (!name || !email)
+          return text(
+            'Refused: git doesn\'t know the contributor\'s name and email yet. Ask them for both (the email should be their GitHub noreply address from https://github.com/settings/emails), then run git config --global user.name "Their Name" and git config --global user.email "their-noreply-address", and call submit again.',
+            true,
+          );
         run("gh", ["repo", "fork", upstream, "--clone=false", "--remote=false"], root);
         // A fresh shallow clone of upstream main, so the commit holds only this folder.
         run("gh", ["repo", "clone", upstream, work, "--", "--depth=1", "--branch=main"], root);
         run("git", ["checkout", "-b", branch], work);
         // Stage the folder from the contributor's working tree into the clean clone's index.
         run("git", ["--work-tree", root, "add", "--", vp.rel], work);
-        run("git", ["commit", "-m", title], work);
+        run(
+          "git",
+          ["-c", `user.name=${name}`, "-c", `user.email=${email}`, "commit", "-m", title],
+          work,
+        );
         // Push with gh's credentials for this one command, without changing the user's git config.
         run(
           "git",
