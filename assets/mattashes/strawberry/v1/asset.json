@@ -1,0 +1,29 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/strawberry",
+  "version": 1,
+  "name": "Strawberry, whole",
+  "license": "CC0-1.0",
+  "size_class": "small",
+  "tags": [
+    "food",
+    "fruit",
+    "berry",
+    "kitchen",
+    "rehearsal"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "directed"
+      ]
+    }
+  ],
+  "ai_assisted": true,
+  "tools": [
+    "Blender",
+    "Claude Opus 5.5"
+  ],
+  "wikidata": "Q14458220"
+}

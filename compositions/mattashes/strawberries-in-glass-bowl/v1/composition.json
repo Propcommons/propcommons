@@ -1,0 +1,222 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/strawberries-in-glass-bowl",
+  "version": 1,
+  "name": "Strawberries in a glass bowl",
+  "license": "CC0-1.0",
+  "tags": [
+    "kitchen",
+    "food",
+    "fruit",
+    "still-life",
+    "rehearsal"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "directed"
+      ]
+    }
+  ],
+  "ai_assisted": true,
+  "tools": [
+    "Blender",
+    "glTF-Transform",
+    "Claude Opus 5.5"
+  ],
+  "items": [
+    {
+      "asset": "mattashes/cutting-board@1",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/glass-bowl@1",
+      "position": [
+        -0.075,
+        0.02,
+        -0.005
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/wooden-spoon@1",
+      "position": [
+        0.128,
+        0.02,
+        0.002
+      ],
+      "rotation": [
+        0,
+        -0.587785,
+        0,
+        0.809017
+      ]
+    },
+    {
+      "asset": "mattashes/strawberry@1",
+      "position": [
+        -0.07461,
+        0.05104,
+        -0.04441
+      ],
+      "rotation": [
+        -0.930414,
+        0.312911,
+        0.017118,
+        0.190059
+      ],
+      "scale": 0.931
+    },
+    {
+      "asset": "mattashes/strawberry@1",
+      "position": [
+        -0.11875,
+        0.05487,
+        0.0291
+      ],
+      "rotation": [
+        0.1497,
+        0.170677,
+        -0.961381,
+        0.155584
+      ],
+      "scale": 0.977
+    },
+    {
+      "asset": "mattashes/strawberry@1",
+      "position": [
+        -0.0931,
+        0.04829,
+        0.03079
+      ],
+      "rotation": [
+        0.256014,
+        0.136112,
+        -0.90846,
+        0.301049
+      ],
+      "scale": 0.881
+    },
+    {
+      "asset": "mattashes/strawberry@1",
+      "position": [
+        -0.04181,
+        0.04575,
+        -0.01042
+      ],
+      "rotation": [
+        -0.259518,
+        0.413674,
+        -0.849674,
+        0.198941
+      ],
+      "scale": 0.862
+    },
+    {
+      "asset": "mattashes/strawberry@1",
+      "position": [
+        -0.08735,
+        0.04452,
+        -0.01556
+      ],
+      "rotation": [
+        -0.010737,
+        0.480739,
+        -0.847345,
+        0.225346
+      ],
+      "scale": 0.981
+    },
+    {
+      "asset": "mattashes/strawberry@1",
+      "position": [
+        -0.0652,
+        0.0465,
+        0.00264
+      ],
+      "rotation": [
+        0.676523,
+        0.068607,
+        -0.579043,
+        0.449798
+      ],
+      "scale": 1.024
+    },
+    {
+      "asset": "mattashes/strawberry@1",
+      "position": [
+        -0.09823,
+        0.04962,
+        -0.0349
+      ],
+      "rotation": [
+        -0.768002,
+        0.455669,
+        -0.448645,
+        0.03544
+      ],
+      "scale": 0.921
+    },
+    {
+      "asset": "mattashes/strawberry@1",
+      "position": [
+        -0.06156,
+        0.04821,
+        -0.02585
+      ],
+      "rotation": [
+        -0.501734,
+        0.048674,
+        -0.778593,
+        0.373746
+      ],
+      "scale": 0.912
+    },
+    {
+      "asset": "mattashes/strawberry@1",
+      "position": [
+        -0.11403,
+        0.04818,
+        -0.01373
+      ],
+      "rotation": [
+        0.404012,
+        0.221243,
+        -0.849254,
+        0.258059
+      ],
+      "scale": 0.908
+    },
+    {
+      "asset": "mattashes/strawberry@1",
+      "position": [
+        -0.09594,
+        0.048,
+        0.01443
+      ],
+      "rotation": [
+        -0.138959,
+        0.249822,
+        -0.940155,
+        0.185439
+      ],
+      "scale": 0.942
+    }
+  ]
+}
