@@ -193,8 +193,9 @@ BSDF's Transmission Weight (1 for clear glass) and IOR (about 1.5); give the gla
 thickness, keep Alpha at 1 (don't use transparency or "Blend"), keep Roughness low, and set Base
 Color to the glass's tint. In an engine without glass support, that Base Color is what people
 see, so a pale tint (not pure white) still reads as a bowl or bottle. The previews include a
-`fallback.png` showing exactly that. Godot's own importer is one such engine; the runtime loader
-`tools/godot/prop_commons.gd` approximates the glass with transparency instead.
+`fallback.png` showing exactly that. Godot's own importer is one such engine; the Prop Commons
+Godot plugin (`tools/godot/addons/prop_commons`) and runtime loader (`tools/godot/prop_commons.gd`)
+approximate the glass with transparency instead.
 
 ### Export from Blender
 

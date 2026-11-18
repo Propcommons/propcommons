@@ -5,7 +5,7 @@
 // (found on this machine, or via the BLENDER and GODOT environment variables) and are skipped
 // otherwise; CI does not install them, so for CI they are manual steps (see CONTRIBUTING.md).
 import { spawnSync } from "node:child_process";
-import { cpSync, mkdtempSync, readdirSync } from "node:fs";
+import { cpSync, mkdtempSync, readdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { measureInThree } from "@propcommons/preview";
@@ -131,4 +131,43 @@ describe("import smoke tests", () => {
       },
     );
   }
+
+  it.skipIf(!godot)(
+    "Godot's editor import shows glass as see-through with the Prop Commons plugin",
+    () => {
+      const r = spawnSync(
+        "bash",
+        [
+          path.join(REPO, "tools/smoke/godot_editor_import.sh"),
+          path.join(REPO, "assets/mattashes/glass-bowl/v1/model.glb"),
+          path.join(REPO, "assets/mattashes/apple-red/v1/model.glb"),
+        ],
+        { encoding: "utf8", cwd: scratch, env: { ...process.env, GODOT: godot as string } },
+      );
+      const line = r.stdout.split("\n").find((l) => l.startsWith("IMPORT_JSON "));
+      expect(line, `${r.stdout}\n${r.stderr}`).toBeDefined();
+      const [glass, apple] = JSON.parse((line as string).slice("IMPORT_JSON ".length)) as {
+        transparency: number;
+        alpha: number;
+      }[][];
+      expect(glass?.[0]?.transparency).toBe(1); // BaseMaterial3D.TRANSPARENCY_ALPHA
+      expect(glass?.[0]?.alpha).toBeCloseTo(0.12, 2);
+      for (const m of apple ?? []) expect(m.transparency).toBe(0);
+    },
+    120_000,
+  );
+});
+
+describe("Godot glass code", () => {
+  it("the runtime loader and the editor plugin approximate glass the same way", () => {
+    const fn = (file: string) => {
+      const src = readFileSync(path.join(REPO, file), "utf8");
+      const start = src.indexOf("static func _approximate_glass");
+      const end = src.indexOf("\n\n", src.indexOf("material.metallic_specular", start));
+      return src.slice(start, end === -1 ? undefined : end).trimEnd();
+    };
+    const runtime = fn("tools/godot/prop_commons.gd");
+    expect(runtime).toContain("TRANSPARENCY_ALPHA");
+    expect(fn("tools/godot/addons/prop_commons/glass_extension.gd")).toBe(runtime);
+  });
 });

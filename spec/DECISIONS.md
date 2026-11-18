@@ -327,5 +327,16 @@ up and still pass.
   check's Godot picture the strawberries now show through the bowl.
 - **No refraction.** Godot's screen-space refraction gave an opaque, dark bowl in the gate check's
   render, and the full attenuation colour made it dark teal; both were dropped.
-- **Only the runtime loader changes.** Dragging a `.glb` into the Godot editor still uses Godot's
-  importer and shows the opaque fallback, as the spec allows.
+- **The editor gets it too, as an opt-in plugin.** `tools/godot/addons/prop_commons` registers a
+  GLTFDocumentExtension that runs the same function after parsing, so a `.glb` dropped into a
+  project imports with see-through glass. Without the plugin Godot shows the opaque fallback, as
+  the spec allows. A test keeps the plugin's copy of the function identical to the loader's, so
+  each file still works on its own.
+
+## Previews and MCP input (19 November 2026)
+
+- **Preview cameras fit the box's corners**, not its bounding sphere, so long thin assets fill the
+  frame: the asset (and scale cube) fill 86% of the frame in the four views, 90% in the close-up
+  and 88% in the kit view. Testers couldn't judge a spoon's 3-pixel details before.
+- **MCP tool inputs are strict.** An unknown argument name (`query` for `text`) is now an error
+  that names it; it used to be dropped silently, returning unfiltered results.

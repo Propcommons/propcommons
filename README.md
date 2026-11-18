@@ -18,7 +18,9 @@ by the same validator.
   `assets/<author>/<slug>/v<N>/model.glb`.
 - **Pin a version.** IDs look like `alice/strawberry-whole@3`. A published version never changes;
   improvements become a new version.
-- **In Godot 4:** drop a `model.glb` into your project and Godot's importer handles it. To load
+- **In Godot 4:** drop a `model.glb` into your project and Godot's importer handles it. For clear
+  glass to import as see-through, also copy [`tools/godot/addons/prop_commons`](tools/godot/addons/prop_commons)
+  into your project's `addons/` folder and enable "Prop Commons" in Project Settings > Plugins. To load
   assets or whole compositions while a game is running (for example from a downloaded copy of the
   library), copy [`tools/godot/prop_commons.gd`](tools/godot/prop_commons.gd) into your project and
   call `PropCommons.load_asset_file(path)` or `PropCommons.load_composition_file(json, library)`.
