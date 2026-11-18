@@ -14,7 +14,7 @@ import {
 import { createRequire } from "node:module";
 import path from "node:path";
 import { parseArgs } from "node:util";
-import { renderPreviews, THREE_DIR } from "@propcommons/preview";
+import { renderCompositionImage, renderPreviews, THREE_DIR } from "@propcommons/preview";
 import {
   buildIndex,
   findRepoRoot,
@@ -51,7 +51,6 @@ interface Config {
 
 const fmtBytes = (n: number | null | undefined) =>
   n == null ? "unknown" : n >= 1e6 ? `${(n / 1e6).toFixed(2)} MB` : `${(n / 1e3).toFixed(1)} KB`;
-const fmtM = (v: number) => (v >= 1 ? `${v.toFixed(3)} m` : `${(v * 100).toFixed(1)} cm`);
 const SIZE_LABEL: Record<string, string> = {
   small: "Small (1–30 cm)",
   medium: "Medium (30 cm–1.2 m)",
@@ -68,6 +67,16 @@ function credits(list: { github?: string; name?: string; roles: string[] }[]): R
 function badges(a: IndexAsset): Raw {
   return html`<span class="badge">${a.manifest?.size_class}</span>${a.manifest?.ai_assisted ? html`<span class="badge ai">AI-assisted</span>` : ""}`;
 }
+
+/** Real-world size as "24 × 8 × 24 cm" (width × height × depth). */
+function dimensions(bounds: number[] | null | undefined): string {
+  if (!bounds?.length) return "";
+  const big = Math.max(...bounds) >= 1;
+  return `${bounds.map((v) => (big ? v.toFixed(2) : (v * 100).toFixed(v < 0.1 ? 1 : 0))).join(" × ")} ${big ? "m" : "cm"}`;
+}
+
+/** The site's public address, for snippets that load a file by URL. Set by buildSite. */
+let siteUrl = "";
 
 /** Previews are cached by a key over the model and its kit neighbours' hashes. */
 async function ensurePreviews(o: SiteOptions, index: Index) {
@@ -113,57 +122,173 @@ async function ensurePreviews(o: SiteOptions, index: Index) {
   }
 }
 
+/** One rendered image per live composition, cached by its items' hashes. */
+async function ensureCompositionPreviews(o: SiteOptions, index: Index) {
+  const byRef = new Map(index.assets.map((a) => [a.ref, a]));
+  for (const c of index.compositions) {
+    if (c.taken_down || !c.preview) continue;
+    const items = c.items
+      .map((i) => ({ item: i, asset: byRef.get(i.asset) }))
+      .filter((x) => x.asset && !x.asset.taken_down && x.asset.files);
+    if (!items.length) continue;
+    const out = path.join(o.root, c.preview);
+    const key = createHash("sha256")
+      .update(
+        JSON.stringify([
+          c.items,
+          items.map((x) => x.asset?.sha256),
+          readFileSync(path.join(SCENE_DIR, "stage.js"), "utf8"),
+          readFileSync(path.join(SCENE_DIR, "render.js"), "utf8"),
+        ]),
+      )
+      .digest("hex");
+    const keyFile = `${out}.key`;
+    if (existsSync(out) && existsSync(keyFile) && readFileSync(keyFile, "utf8") === key) continue;
+    o.log?.(`rendering ${c.ref}`);
+    await renderCompositionImage(
+      items.map((x) => ({
+        model: path.join(o.root, x.asset?.files?.model as string),
+        position: x.item.position,
+        rotation: x.item.rotation,
+        scale: x.item.scale,
+      })),
+      out,
+    );
+    writeFileSync(keyFile, key);
+  }
+}
+
 function assetCard(o: SiteOptions, a: IndexAsset): Raw {
   const m = a.manifest ?? {};
   return html`<li class="card" data-size="${m.size_class}" data-ai="${m.ai_assisted ? "yes" : "no"}" data-tags="${(m.tags ?? []).join(" ")}">
-  <a href="${o.base}${a.path}/">
-    <img src="${o.base}${a.previews?.thumb}" alt="${m.name}" width="512" height="512" loading="lazy">
-    <span class="name">${m.name}</span>
-  </a>
-  <span class="meta">${a.ref} ${badges(a)}</span>
-  <span class="tags">${(m.tags ?? []).map((t: string) => html`<span class="tag">${t}</span>`)}</span>
+  <img class="thumb" src="${o.base}${a.previews?.thumb}" alt="" width="512" height="512" loading="lazy">
+  <div class="card-body">
+    <a class="card-title" href="${o.base}${a.path}/">${m.name}</a>
+    <span class="card-meta">${dimensions(a.measured?.bounds_m)} ${badges(a)}</span>
+  </div>
+</li>`;
+}
+
+function sceneCard(o: SiteOptions, c: IndexComposition): Raw {
+  return html`<li class="card scene-card">
+  ${c.preview ? html`<img src="${o.base}${c.preview}" alt="" width="1600" height="1000" loading="lazy">` : ""}
+  <div class="card-body">
+    <a class="card-title" href="${o.base}${c.path}/">${c.manifest?.name}</a>
+    <span class="card-meta">${plural(c.items.length, "item")} · ${plural(new Set(c.items.map((i) => i?.asset)).size, "asset")} · ${plural(c.credits.length, "contributor")}</span>
+  </div>
 </li>`;
 }
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
-function galleryPage(o: SiteOptions, index: Index): string {
+function homePage(o: SiteOptions, index: Index, wanted: any): string {
   const live = index.assets.filter((a) => a.latest && !a.taken_down);
+  const scenes = index.compositions.filter((c) => c.latest && !c.taken_down);
+  const featured = scenes.find((c) => c.preview);
   const tags = [...new Set(live.flatMap((a) => a.manifest?.tags ?? []))].sort();
+  const people = new Set(live.flatMap((a) => a.credits.map((c) => c.github ?? c.name)));
+  const wantedList: any[] = Array.isArray(wanted?.wanted) ? wanted.wanted.slice(0, 3) : [];
   const body = html`
-<section class="intro">
-  <h1>Prop Commons</h1>
-  <p>An open library of CC0 game props that all follow one contract: real-world scale, resting on the ground, one plain glTF file each. Parts made by different people fit together without rework.</p>
-  <p class="muted">${plural(live.length, "asset")} · ${plural(index.compositions.filter((c) => c.latest && !c.taken_down).length, "composition")} · spec ${index.spec}</p>
-  <p class="cta"><a class="button" href="${o.base}contribute/">Add an asset</a> <a href="${o.base}wanted/">See what's wanted</a></p>
+<section class="hero">
+  <div>
+    <p class="eyebrow">Open library · CC0 · free forever</p>
+    <h1>Game props that fit together.</h1>
+    <p class="lede">Every asset follows one contract: real-world scale, resting on the ground, one plain glTF file. So a bowl from one person and fruit from another drop into the same scene with no fixes.</p>
+    <div class="cta">
+      <a class="button" href="#library">Browse the library</a>
+      <a class="button secondary" href="${o.base}contribute/">Add an asset</a>
+    </div>
+    <ul class="stats">
+      <li><strong>${live.length}</strong> assets</li>
+      <li><strong>${scenes.length}</strong> ${scenes.length === 1 ? "composition" : "compositions"}</li>
+      <li><strong>${people.size}</strong> ${people.size === 1 ? "contributor" : "contributors"}</li>
+      <li>spec ${index.spec}</li>
+    </ul>
+  </div>
+  ${
+    featured
+      ? html`<figure class="hero-figure">
+    <a href="${o.base}${featured.path}/"><img src="${o.base}${featured.preview}" alt="${featured.manifest?.name}: ${plural(featured.items.length, "item")} from the library, placed in one scene" width="1600" height="1000"></a>
+    <figcaption>${featured.manifest?.name}: ${plural(new Set(featured.items.map((i) => i?.asset)).size, "asset")}, combined with no manual fixes. <a href="${o.base}${featured.path}/">Explore it in 3D</a></figcaption>
+  </figure>`
+      : ""
+  }
+</section>
+
+<ol class="how" aria-label="How it works">
+  <li><h3>One contract</h3><p>Metres, +Y up, resting on the ground, centred, one glTF file. The <a href="${o.base}spec/0.1/">spec</a> says exactly what.</p></li>
+  <li><h3>Checked automatically</h3><p>A validator measures every asset and says what to fix, by rule. Nothing merges until it passes.</p></li>
+  <li><h3>Fits anywhere</h3><p>Load any asset into Three.js, Godot, Blender or your engine at the right size, next to anyone else's.</p></li>
+</ol>
+
+<section id="library" aria-labelledby="library-title">
+  <div class="section-head">
+    <h2 id="library-title">Library</h2>
+    <p class="muted">Every asset is CC0: use it for anything, no credit required.</p>
+  </div>
+  <form class="filters" id="filters" aria-label="Filter assets">
+    <label>Tag <select name="tag"><option value="">All</option>${tags.map((t) => html`<option>${t}</option>`)}</select></label>
+    <label>Size <select name="size"><option value="">All</option><option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option></select></label>
+    <label>AI-assisted <select name="ai"><option value="">Either</option><option value="yes">Yes</option><option value="no">No</option></select></label>
+    <span class="muted" id="count" aria-live="polite"></span>
+  </form>
+  <ul class="grid" id="gallery">${live.map((a) => assetCard(o, a))}</ul>
   <p class="muted">The first assets are simple seeds generated by a script, to test the pipeline. The real kit comes from contributors.</p>
 </section>
-<form class="filters" id="filters" aria-label="Filter assets">
-  <label>Tag <select name="tag"><option value="">All</option>${tags.map((t) => html`<option>${t}</option>`)}</select></label>
-  <label>Size <select name="size"><option value="">All</option><option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option></select></label>
-  <label>AI-assisted <select name="ai"><option value="">Either</option><option value="yes">Yes</option><option value="no">No</option></select></label>
-  <span class="muted" id="count" aria-live="polite"></span>
-</form>
-<ul class="grid" id="gallery">${live.map((a) => assetCard(o, a))}</ul>`;
+
+${
+  scenes.length
+    ? html`<section aria-labelledby="scenes-title">
+  <div class="section-head">
+    <h2 id="scenes-title">Compositions</h2>
+    <p><a href="${o.base}compositions/">All compositions</a></p>
+  </div>
+  <p class="muted">Scenes built only from library assets, each pinned to an exact version.</p>
+  <ul class="scene-grid">${scenes.slice(0, 3).map((c) => sceneCard(o, c))}</ul>
+</section>`
+    : ""
+}
+
+${
+  wantedList.length
+    ? html`<section aria-labelledby="wanted-title">
+  <div class="section-head">
+    <h2 id="wanted-title">Wanted next</h2>
+    <p><a href="${o.base}wanted/">The full list</a></p>
+  </div>
+  <ul class="wanted">${wantedList.map(
+    (w) =>
+      html`<li class="card"><h3>${w.name}</h3><p class="meta"><span class="badge">${w.size_class}</span></p><p class="muted">${w.notes}</p></li>`,
+  )}</ul>
+  <p class="cta"><a class="button" href="${o.base}contribute/">Make one</a></p>
+</section>`
+    : ""
+}`;
   return page({
     base: o.base,
     title: "Prop Commons",
-    description: "An open library of CC0 game props at real-world scale.",
+    description:
+      "An open library of free CC0 game props at real-world scale, made to fit together.",
     body,
     active: "gallery",
     scripts: [{ src: "static/gallery.js" }],
   });
 }
 
+function snippet(id: string, code: string): Raw {
+  return html`<div class="snippet"><button class="copy" type="button" data-copy="${id}">Copy</button><pre><code id="${id}">${code}</code></pre></div>`;
+}
+
 function assetPage(o: SiteOptions, index: Index, a: IndexAsset): string {
   const versions = index.assets.filter((b) => b.id === a.id).sort((x, y) => y.version - x.version);
-  const versionList = html`<ul class="versions">${versions.map(
+  const versionList = html`<ul class="plain-list">${versions.map(
     (v) =>
-      html`<li>${v.version === a.version ? html`<strong>v${v.version}</strong>` : html`<a href="${o.base}${v.path}/">v${v.version}</a>`}${v.taken_down ? " (taken down)" : ""}${v.latest ? " (latest)" : ""}</li>`,
+      html`<li>${v.version === a.version ? html`<strong>v${v.version}</strong>` : html`<a href="${o.base}${v.path}/">v${v.version}</a>`}${v.taken_down ? " (taken down)" : ""}${v.latest ? html` <span class="muted">latest</span>` : ""}</li>`,
   )}</ul>`;
   if (a.taken_down) {
-    const body = html`<h1>${a.ref}</h1>
-<p>This version was taken down on ${a.tombstone?.date} by ${a.tombstone?.by}. Reason: ${a.tombstone?.reason}</p>
+    const body = html`<nav class="crumbs"><a href="${o.base}">Library</a> / ${a.id}</nav>
+<h1>${a.ref}</h1>
+<p class="callout">This version was taken down on ${a.tombstone?.date} by ${a.tombstone?.by}. Reason: ${a.tombstone?.reason}</p>
 <h2>Versions</h2>${versionList}`;
     return page({
       base: o.base,
@@ -180,65 +305,109 @@ function assetPage(o: SiteOptions, index: Index, a: IndexAsset): string {
   const parent =
     typeof m.parent === "string" ? index.assets.find((b) => b.ref === m.parent) : undefined;
   const warnings = a.results.filter((r) => r.level !== "info");
+  const url = `${siteUrl}${a.files?.model}`;
+  const file = `${a.id.replace("/", "-")}-v${a.version}.glb`;
+  const cube = m.size_class === "small" ? "10 cm" : "1 m";
+  const views = [
+    ["front", `Three-quarter front, beside a ${cube} cube`],
+    ["side", "Side"],
+    ["top", "Top"],
+    ["kit", `Beside other ${m.size_class} assets`],
+  ] as const;
   const body = html`
-<nav class="crumbs"><a href="${o.base}">Assets</a> / ${a.id}</nav>
-<h1>${m.name}</h1>
-<p class="meta">${a.ref} ${badges(a)} ${(m.tags ?? []).map((t: string) => html`<span class="tag">${t}</span>`)}</p>
-<div class="asset">
-  <div class="viewer">
-    <model-viewer src="${o.base}${a.files?.model}" alt="${m.name}" camera-controls touch-action="pan-y" shadow-intensity="1" shadow-softness="0.8" environment-image="${o.base}scene/studio.hdr" exposure="1" tone-mapping="neutral"></model-viewer>
-    <ul class="previews">${(["front", "side", "top", "kit"] as const).map(
-      (v) =>
-        html`<li><a href="${o.base}${a.previews?.[v]}"><img src="${o.base}${a.previews?.[v]}" alt="${m.name}: ${v} view" width="256" height="256" loading="lazy"></a></li>`,
+<nav class="crumbs"><a href="${o.base}">Library</a> / ${a.id}</nav>
+<div class="page-head">
+  <h1>${m.name}</h1>
+  <p class="chips"><span class="badge">${SIZE_LABEL[m.size_class] ?? m.size_class}</span> <span class="badge">CC0</span>${m.ai_assisted ? html` <span class="badge ai">AI-assisted</span>` : ""} ${(m.tags ?? []).map((t: string) => html`<span class="tag">${t}</span> `)}</p>
+</div>
+<div class="asset-layout">
+  <div>
+    <model-viewer src="${o.base}${a.files?.model}" alt="3D view of ${m.name}" camera-controls touch-action="pan-y" shadow-intensity="1" shadow-softness="0.8" environment-image="${o.base}scene/studio.hdr" exposure="1" tone-mapping="neutral"></model-viewer>
+    <p class="viewer-hint">Drag to turn it, scroll or pinch to zoom.</p>
+    <ul class="previews">${views.map(
+      ([v, label]) =>
+        html`<li><figure><a href="${o.base}${a.previews?.[v]}"><img src="${o.base}${a.previews?.[v]}" alt="${m.name}: ${label}" width="256" height="256" loading="lazy"></a><figcaption>${label}</figcaption></figure></li>`,
     )}</ul>
-    <p class="muted">Previews: three-quarter front, side and top beside a ${m.size_class === "small" ? "10 cm" : "1 m"} cube, and beside other ${m.size_class} assets.</p>
+
+    <section class="use" aria-labelledby="use-title">
+      <h2 id="use-title">Use it</h2>
+      <p class="muted">It's a plain glTF 2.0 binary in metres, +Y up, resting on the ground, so it comes in at the right size with no settings.</p>
+      <details open><summary>Godot 4</summary><div>
+        <p>Drop <code>${file}</code> into your project's folder and Godot imports it. To load it while a game is running, copy <a href="https://github.com/${(o as SiteOptions & { repo?: string }).repo ?? ""}/blob/main/tools/godot/prop_commons.gd">prop_commons.gd</a> into your project, then:</p>
+        ${snippet("godot", `var prop := PropCommons.load_asset_file("res://${file}")\nadd_child(prop)`)}
+      </div></details>
+      <details><summary>Three.js</summary><div>
+        ${snippet("three", `import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";\n\nconst gltf = await new GLTFLoader().loadAsync(\n  "${url}",\n);\nscene.add(gltf.scene);`)}
+      </div></details>
+      <details><summary>Blender</summary><div>
+        <p><strong>File → Import → glTF 2.0 (.glb/.gltf)</strong> and pick <code>${file}</code>. It arrives at real-world size, standing on the ground.</p>
+      </div></details>
+      <details><summary>Other engines</summary><div>
+        <p>Anything that reads glTF 2.0 works: Unity with the glTFast package, Unreal with its glTF importer, Babylon.js, PlayCanvas and more. No compression or extensions beyond glass are used.</p>
+      </div></details>
+      <details><summary>Pin this exact version</summary><div>
+        <p>Compositions and tools refer to assets by a pinned ID. This one never changes; improvements become a new version.</p>
+        ${snippet("ref", a.ref)}
+      </div></details>
+    </section>
   </div>
-  <div class="details">
-    <p><a class="button" href="${o.base}${a.files?.model}" download="${a.id.replace("/", "-")}-v${a.version}.glb">Download model.glb</a> ${fmtBytes(meas.file_bytes)}</p>
-    ${a.files?.collision ? html`<p><a href="${o.base}${a.files.collision}" download>collision.glb</a></p>` : ""}
-    <h2>Measured</h2>
-    <table class="kv">
-      <tr><th>Size (x × y × z)</th><td>${(meas.bounds_m ?? []).map(fmtM).join(" × ")}</td></tr>
-      <tr><th>Size class</th><td>${SIZE_LABEL[m.size_class] ?? m.size_class}</td></tr>
-      <tr><th>Triangles</th><td>${meas.triangles?.toLocaleString("en-US")}</td></tr>
-      <tr><th>Materials</th><td>${meas.materials}</td></tr>
-      <tr><th>Textures</th><td>${(meas.textures ?? []).map((t: { slot: string; width: number; height: number; format: string }) => `${t.slot} ${t.width}×${t.height} ${t.format}`).join(", ") || "none"}</td></tr>
-      <tr><th>Texel density</th><td>${meas.texel_density_px_per_m == null ? "n/a" : `${meas.texel_density_px_per_m} px/m`}</td></tr>
-      <tr><th>SHA-256</th><td><code>${a.sha256}</code></td></tr>
-    </table>
-    ${warnings.length ? html`<h2>Validator notes</h2><ul>${warnings.map((r) => html`<li><strong>${r.rule}</strong> (${r.level}): ${r.message}</li>`)}</ul>` : ""}
-    <h2>About</h2>
-    <table class="kv">
-      <tr><th>License</th><td><a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a></td></tr>
-      <tr><th>AI-assisted</th><td>${m.ai_assisted ? "Yes" : "No"}</td></tr>
-      <tr><th>Tools</th><td>${(m.tools ?? []).join(", ")}</td></tr>
-      ${m.wikidata ? html`<tr><th>Wikidata</th><td>${safeLink(`https://www.wikidata.org/wiki/${m.wikidata}`, m.wikidata)}</td></tr>` : ""}
-      ${m.parent ? html`<tr><th>Derived from</th><td>${parent ? html`<a href="${o.base}${parent.path}/">${m.parent}</a>` : m.parent}</td></tr>` : ""}
-      ${m.source_url ? html`<tr><th>Source</th><td>${safeLink(m.source_url, m.source_url)}</td></tr>` : ""}
-      ${m.notes_url ? html`<tr><th>Process notes</th><td>${safeLink(m.notes_url, m.notes_url)}</td></tr>` : ""}
-    </table>
-    <h2>Credits</h2>${credits(a.credits)}
-    <h2>Versions</h2>${versionList}
-    <h2>Used in</h2>${usedIn.length ? html`<ul>${usedIn.map((c) => html`<li><a href="${o.base}${c.path}/">${c.manifest?.name}</a> <span class="muted">${c.ref}</span></li>`)}</ul>` : html`<p class="muted">No compositions yet.</p>`}
-    <h2>Use it</h2>
-    <p class="muted">Pin this exact version as <code>${a.ref}</code>. The file is at <code>${a.files?.model}</code> in the repository.</p>
-  </div>
+
+  <aside class="panel" aria-label="Details">
+    <div class="download">
+      <a class="button" href="${o.base}${a.files?.model}" download="${file}">Download .glb</a>
+      <span class="muted">${fmtBytes(meas.file_bytes)}</span>
+    </div>
+    ${a.files?.collision ? html`<p><a href="${o.base}${a.files.collision}" download="${a.id.replace("/", "-")}-v${a.version}-collision.glb">Collision shapes (.glb)</a></p>` : ""}
+    <dl class="facts">
+      <dt>Size</dt><dd>${dimensions(meas.bounds_m)}</dd>
+      <dt>Triangles</dt><dd>${meas.triangles?.toLocaleString("en-US")}</dd>
+      <dt>Materials</dt><dd>${meas.materials}</dd>
+      <dt>Textures</dt><dd>${(meas.textures ?? []).map((t: { width: number; height: number }) => `${t.width}×${t.height}`).join(", ") || "none"}</dd>
+      <dt>Version</dt><dd>${a.version}</dd>
+    </dl>
+
+    <h2>Checks</h2>
+    <p class="status">${
+      warnings.length
+        ? html`<span class="badge ai">${plural(warnings.length, "note")}</span> <span>${warnings.map((r) => html`<strong>${r.rule}</strong>: ${r.message} `)}</span>`
+        : html`<span class="badge ok">Passes</span> <span>every rule in <a href="${o.base}spec/0.1/">spec ${index.spec}</a></span>`
+    }</p>
+
+    <h2>Credits</h2>
+    ${credits(a.credits)}
+    <dl class="facts">
+      <dt>License</dt><dd><a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a></dd>
+      <dt>Made with</dt><dd>${(m.tools ?? []).join(", ")}</dd>
+      ${m.parent ? html`<dt>Derived from</dt><dd>${parent ? html`<a href="${o.base}${parent.path}/">${m.parent}</a>` : m.parent}</dd>` : ""}
+      ${m.source_url ? html`<dt>Source</dt><dd>${safeLink(m.source_url, "source files")}</dd>` : ""}
+      ${m.notes_url ? html`<dt>Process</dt><dd>${safeLink(m.notes_url, "notes")}</dd>` : ""}
+      ${m.wikidata ? html`<dt>Wikidata</dt><dd>${safeLink(`https://www.wikidata.org/wiki/${m.wikidata}`, m.wikidata)}</dd>` : ""}
+    </dl>
+
+    <h2>Used in</h2>
+    ${usedIn.length ? html`<ul class="plain-list">${usedIn.map((c) => html`<li><a href="${o.base}${c.path}/">${c.manifest?.name}</a></li>`)}</ul>` : html`<p class="muted">No compositions yet.</p>`}
+
+    <h2>Versions</h2>
+    ${versionList}
+    <p class="hash">SHA-256 <code>${a.sha256}</code></p>
+  </aside>
 </div>`;
   return page({
     base: o.base,
     title: `${m.name} · Prop Commons`,
-    description: `${m.name}: a CC0 ${m.size_class} prop.`,
+    description: `${m.name}: a free CC0 ${m.size_class} game prop, ${dimensions(meas.bounds_m)}.`,
     body,
     active: "gallery",
     modelViewer: true,
+    scripts: [{ src: "static/copy.js" }],
   });
 }
 
 function compositionsPage(o: SiteOptions, index: Index): string {
   const live = index.compositions.filter((c) => c.latest && !c.taken_down);
-  const body = html`<h1>Compositions</h1>
-<p>A composition places pinned versions of assets, usually by different people, into one scene. It holds no geometry of its own.</p>
-${live.length ? html`<ul class="list">${live.map((c) => html`<li><a href="${o.base}${c.path}/">${c.manifest?.name}</a> <span class="muted">${c.ref} · ${c.items.length} items · by ${c.credits.length} people</span></li>`)}</ul>` : html`<p class="muted">No compositions yet.</p>`}`;
+  const body = html`<div class="page-head"><h1>Compositions</h1>
+<p class="lede">Scenes built only from library assets, often by different people, each pinned to an exact version. A composition holds no geometry of its own, just where each asset goes.</p></div>
+${live.length ? html`<ul class="scene-grid">${live.map((c) => sceneCard(o, c))}</ul>` : html`<p class="muted">No compositions yet.</p>`}`;
   return page({ base: o.base, title: "Compositions · Prop Commons", body, active: "compositions" });
 }
 
@@ -247,7 +416,7 @@ function compositionPage(o: SiteOptions, index: Index, c: IndexComposition): str
     return page({
       base: o.base,
       title: `${c.ref} (taken down) · Prop Commons`,
-      body: html`<h1>${c.ref}</h1><p>This composition version was taken down.</p>`,
+      body: html`<h1>${c.ref}</h1><p class="callout">This composition version was taken down.</p>`,
       active: "compositions",
     });
   }
@@ -255,29 +424,37 @@ function compositionPage(o: SiteOptions, index: Index, c: IndexComposition): str
   const byRef = new Map(index.assets.map((a) => [a.ref, a]));
   const rows = c.items.map((item, i) => {
     const a = byRef.get(item.asset);
-    const fmt = (v: unknown) =>
-      Array.isArray(v) ? v.map((n) => Number(n).toFixed(3)).join(", ") : "";
-    return html`<tr><td>${i + 1}</td><td>${a ? html`<a href="${o.base}${a.path}/">${a.manifest?.name}</a> <span class="muted">${item.asset}</span>` : item.asset}</td><td>${fmt(item.position)}</td><td>${fmt(item.rotation)}</td><td>${item.scale ?? 1}</td></tr>`;
+    const pos = Array.isArray(item.position)
+      ? item.position.map((n: number) => `${(Number(n) * 100).toFixed(1)}`).join(", ")
+      : "";
+    return html`<tr><td>${i + 1}</td><td>${a?.previews ? html`<img class="item-thumb" src="${o.base}${a.previews.thumb}" alt="" width="44" height="44" loading="lazy">` : ""}</td><td>${a ? html`<a href="${o.base}${a.path}/">${a.manifest?.name}</a><br><span class="muted">${item.asset}</span>` : item.asset}</td><td>${pos}</td><td>${item.scale ?? 1}</td></tr>`;
   });
   const body = html`
 <nav class="crumbs"><a href="${o.base}compositions/">Compositions</a> / ${c.id}</nav>
-<h1>${m.name}</h1>
-<p class="meta">${c.ref} · ${c.items.length} items${m.ai_assisted ? html` <span class="badge ai">AI-assisted</span>` : ""}</p>
-<div class="composition">
-  <div class="viewer"><canvas id="composition" width="960" height="640" data-composition="composition.json" data-index="${o.base}index.json" data-base="${o.base}" aria-label="3D view of ${m.name}"></canvas>
-  <p class="muted" id="status">Loading…</p></div>
-  <div class="details">
-    <h2>Credits</h2>
-    <p class="muted">Everyone whose work is in this scene: the composition's own credits plus those of every asset it pins.</p>
-    ${credits(c.credits)}
+<div class="page-head">
+  <h1>${m.name}</h1>
+  <p class="chips"><span class="badge">${plural(c.items.length, "item")}</span> <span class="badge">${plural(new Set(c.items.map((i) => i?.asset)).size, "asset")}</span> <span class="badge">CC0</span>${m.ai_assisted ? html` <span class="badge ai">AI-assisted</span>` : ""}</p>
+</div>
+<div class="composition-layout">
+  <div>
+    <canvas id="composition" width="960" height="640" data-composition="composition.json" data-index="${o.base}index.json" data-base="${o.base}" aria-label="3D view of ${m.name}"></canvas>
+    <p class="viewer-hint" id="status">Loading…</p>
     <h2>Items</h2>
-    <table class="items"><thead><tr><th>#</th><th>Asset</th><th>Position (m)</th><th>Rotation (x, y, z, w)</th><th>Scale</th></tr></thead><tbody>${rows}</tbody></table>
-    <p><a href="composition.json" download>Download composition.json</a></p>
+    <div class="table-scroll"><table class="items"><thead><tr><th>#</th><th><span class="muted">Preview</span></th><th>Asset</th><th>Position (cm)</th><th>Scale</th></tr></thead><tbody>${rows}</tbody></table></div>
   </div>
+  <aside class="panel" aria-label="Details">
+    <div class="download"><a class="button" href="composition.json" download="${c.id.replace("/", "-")}-v${c.version}.json">Download composition.json</a></div>
+    <h2>Credits</h2>
+    <p class="muted">Everyone whose work is in this scene.</p>
+    ${credits(c.credits)}
+    <h2>Use it</h2>
+    <p class="muted">Load each asset's model.glb and apply its position (metres), rotation (glTF quaternion x, y, z, w) and scale. In Godot, <code>PropCommons.load_composition_file()</code> does this for you.</p>
+  </aside>
 </div>`;
   return page({
     base: o.base,
     title: `${m.name} · Prop Commons`,
+    description: `${m.name}: a scene made of ${plural(c.items.length, "item")} from the Prop Commons library.`,
     body,
     active: "compositions",
     importMap: true,
@@ -407,7 +584,13 @@ const SPEC_FILES = [
 export async function buildSite(o: SiteOptions): Promise<Index> {
   const config: Config = JSON.parse(readFileSync(path.join(o.root, "project.config.json"), "utf8"));
   const index = await buildIndex(o.root);
-  if (o.previews) await ensurePreviews(o, index);
+  siteUrl = config.site.url.endsWith("/") ? config.site.url : `${config.site.url}/`;
+  (o as SiteOptions & { repo?: string }).repo = `${config.github.owner}/${config.github.repo}`;
+  setRepoUrl(`https://github.com/${config.github.owner}/${config.github.repo}`);
+  if (o.previews) {
+    await ensurePreviews(o, index);
+    await ensureCompositionPreviews(o, index);
+  }
 
   rmSync(o.outDir, { recursive: true, force: true });
   mkdirSync(o.outDir, { recursive: true });
@@ -484,13 +667,14 @@ export async function buildSite(o: SiteOptions): Promise<Index> {
   for (const c of index.compositions) {
     if (!c.taken_down)
       copy(path.join(o.root, c.path, "composition.json"), `${c.path}/composition.json`);
+    if (c.preview && existsSync(path.join(o.root, c.preview)))
+      copy(path.join(o.root, c.preview), c.preview);
     write(`${c.path}/index.html`, compositionPage(o, index, c));
   }
 
-  write("index.html", galleryPage(o, index));
+  write("index.html", homePage(o, index, wanted));
   write("compositions/index.html", compositionsPage(o, index));
   const repo = `${config.github.owner}/${config.github.repo}`;
-  setRepoUrl(`https://github.com/${repo}`);
   write("wanted/index.html", wantedPage(o, wanted, repo));
   write("contribute/index.html", contributePage(o, repo));
   write("about/index.html", aboutPage(o, config));

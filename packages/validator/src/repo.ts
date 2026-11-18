@@ -247,6 +247,8 @@ export interface IndexAsset {
 }
 
 export interface IndexComposition {
+  /** Path of a rendered image of the scene (three-quarter front view); null when taken down. */
+  preview: string | null;
   id: string;
   version: number;
   ref: string;
@@ -381,6 +383,7 @@ export async function buildIndex(root: string): Promise<Index> {
       )
       .filter((a): a is IndexAsset => a !== undefined);
     compositions.push({
+      preview: tomb ? null : `previews/compositions/${f.author}/${f.slug}/v${f.version}/scene.png`,
       id: `${f.author}/${f.slug}`,
       version: f.version,
       ref: `${f.author}/${f.slug}@${f.version}`,

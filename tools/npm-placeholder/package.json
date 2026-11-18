@@ -11,7 +11,10 @@
   "bin": {
     "propcommons": "index.js"
   },
-  "files": ["index.js", "README.md"],
+  "files": [
+    "index.js",
+    "README.md"
+  ],
   "engines": {
     "node": ">=18"
   }

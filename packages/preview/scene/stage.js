@@ -151,3 +151,32 @@ export function frameCamera(box, direction, aspect = 1, margin = 1.2) {
   camera.updateProjectionMatrix();
   return camera;
 }
+
+/**
+ * Moves a camera along its view direction until the box's eight corners fill the frame to
+ * `fill` (0–1) of the tighter screen edge. Tighter than framing the bounding sphere, which leaves
+ * wide, flat scenes small in the middle.
+ */
+export function fitCameraToBox(camera, box, fill = 0.88) {
+  const target = box.getCenter(new THREE.Vector3());
+  const corners = [];
+  for (const x of [box.min.x, box.max.x])
+    for (const y of [box.min.y, box.max.y])
+      for (const z of [box.min.z, box.max.z]) corners.push(new THREE.Vector3(x, y, z));
+  for (let i = 0; i < 6; i++) {
+    camera.updateMatrixWorld(true);
+    let extent = 0;
+    for (const c of corners) {
+      const p = c.clone().project(camera);
+      extent = Math.max(extent, Math.abs(p.x), Math.abs(p.y));
+    }
+    const offset = camera.position.clone().sub(target);
+    offset.multiplyScalar(extent / fill);
+    camera.position.copy(target).add(offset);
+    camera.lookAt(target);
+  }
+  camera.near = camera.position.distanceTo(target) / 100;
+  camera.far = camera.position.distanceTo(target) * 100;
+  camera.updateProjectionMatrix();
+  return camera;
+}

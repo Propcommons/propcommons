@@ -212,6 +212,49 @@ async function openScenePage(extra: [string, string][]) {
   return { browser, page, errors };
 }
 
+export interface CompositionItem {
+  /** Absolute path of the pinned asset's model.glb. */
+  model: string;
+  position: number[];
+  rotation: number[];
+  scale?: number;
+}
+
+/** Renders a composition in the reference scene to a PNG (three-quarter front view). */
+export async function renderCompositionImage(
+  items: CompositionItem[],
+  outFile: string,
+  size = { width: 1600, height: 1000 },
+): Promise<string> {
+  const models = [...new Set(items.map((i) => path.resolve(i.model)))];
+  const { browser, page, errors } = await openScenePage(
+    models.map((m, i): [string, string] => [`/files/c${i}.glb`, m]),
+  );
+  try {
+    const data = (await page.evaluate(
+      (job) =>
+        (window as unknown as { renderComposition(j: unknown): Promise<string> }).renderComposition(
+          job,
+        ),
+      {
+        ...size,
+        items: items.map((i) => ({
+          url: `/files/c${models.indexOf(path.resolve(i.model))}.glb`,
+          position: i.position,
+          rotation: i.rotation,
+          scale: i.scale ?? 1,
+        })),
+      },
+    )) as string;
+    if (errors.length) throw new Error(`The preview page failed: ${errors.join("; ")}`);
+    mkdirSync(path.dirname(outFile), { recursive: true });
+    writeFileSync(outFile, Buffer.from(data.slice("data:image/png;base64,".length), "base64"));
+    return outFile;
+  } finally {
+    await browser.close();
+  }
+}
+
 /**
  * Loads each .glb with Three.js's GLTFLoader, as a game or web page would, and returns its size
  * in metres from world-space vertex positions. Used by the import smoke tests.

@@ -7,6 +7,7 @@ import {
   createRenderer,
   createStage,
   enableShadows,
+  fitCameraToBox,
   fitStage,
   frameCamera,
   scaleCube,
@@ -110,6 +111,44 @@ window.renderJob = async (job) => {
   out.bounds = [size.x, size.y, size.z];
   renderer.dispose();
   return out;
+};
+
+/**
+ * Renders a composition: job = { width, height, items: [{ url, position, rotation, scale }] }.
+ * Returns a PNG data URL of the three-quarter front view.
+ */
+window.renderComposition = async (job) => {
+  const canvas = document.createElement("canvas");
+  canvas.width = job.width;
+  canvas.height = job.height;
+  document.body.appendChild(canvas);
+  const renderer = createRenderer(canvas, {
+    width: job.width,
+    height: job.height,
+    preserveDrawingBuffer: true,
+  });
+  const stage = await createStage(renderer, "/scene/studio.hdr");
+  const models = new Map();
+  for (const item of job.items)
+    if (!models.has(item.url)) models.set(item.url, await loadModel(item.url));
+  const box = new THREE.Box3();
+  for (const item of job.items) {
+    const obj = models.get(item.url).clone(true);
+    obj.position.fromArray(item.position);
+    obj.quaternion.fromArray(item.rotation);
+    obj.scale.setScalar(item.scale ?? 1);
+    enableShadows(obj);
+    stage.scene.add(obj);
+    box.union(boundsOf(obj));
+  }
+  fitStage(stage, box);
+  const camera = fitCameraToBox(
+    frameCamera(box, viewDirection("front"), job.width / job.height),
+    box,
+  );
+  const png = snapshot(renderer, stage.scene, camera);
+  renderer.dispose();
+  return png;
 };
 
 /** Loads each model and returns its world-space size [x, y, z] in metres. */

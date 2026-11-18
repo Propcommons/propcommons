@@ -8,6 +8,7 @@ import {
   createRenderer,
   createStage,
   enableShadows,
+  fitCameraToBox,
   fitStage,
   frameCamera,
   viewDirection,
@@ -57,7 +58,7 @@ async function main() {
   const box = new THREE.Box3();
   for (const o of placed) box.union(boundsOf(o));
   fitStage(stage, box);
-  const camera = frameCamera(box, viewDirection("front"), width / height, 1.1);
+  const camera = fitCameraToBox(frameCamera(box, viewDirection("front"), width / height), box, 0.8);
   const controls = new OrbitControls(camera, canvas);
   controls.target.copy(box.getCenter(new THREE.Vector3()));
   controls.maxPolarAngle = Math.PI / 2 - 0.02; // stay above the ground

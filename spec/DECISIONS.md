@@ -220,3 +220,17 @@ build choices, not spec changes: any of them can be reversed by the maintainer.
   itself.
 - **The spec page is rendered from SPEC.md** with `marked` (pinned) at build time; the raw `.md`
   stays alongside for agents.
+
+## Site design (18 November 2026)
+
+- **Compositions get a rendered image** (`previews/compositions/<author>/<slug>/vN/scene.png`,
+  listed as `preview` in index.json), made with the same reference scene as asset previews. It is
+  the home page's hero image and each composition's card.
+- **Composition images and the 3D viewer frame the scene's corners**, not its bounding sphere, so
+  wide, flat scenes fill the frame. Asset review previews keep the spec's framing.
+- **The home page leads with the promise and the proof**: the headline, the featured composition
+  image, three "how it works" points, then the library, compositions and the next Wanted items.
+- **Asset pages put download and facts in a side panel** and add "Use it" snippets for Godot,
+  Three.js and Blender, with copy buttons. Sizes are shown in centimetres (metres above 1 m).
+- **Still no web fonts, framework or third-party requests**: system fonts, one stylesheet with
+  colour tokens for light and dark, and the same content security policy.

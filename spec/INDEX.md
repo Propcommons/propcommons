@@ -35,13 +35,14 @@ shape carefully: add fields freely, but never rename or remove one within a spec
 
 ## Composition entries
 
-| Field                                                          | Meaning                                                                               |
-| -------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `id`, `version`, `ref`, `latest`, `taken_down`, `pass`, `path` | As for assets                                                                         |
-| `manifest`                                                     | The composition's `composition.json`, unchanged; null when taken down                 |
-| `items`                                                        | The manifest's `items`, each `{ asset, position, rotation, scale? }`                  |
-| `credits`                                                      | Effective credits: the composition's own, then every pinned asset's effective credits |
-| `results`                                                      | The validator's `results` list for this version                                       |
+| Field                                                          | Meaning                                                                                |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `id`, `version`, `ref`, `latest`, `taken_down`, `pass`, `path` | As for assets                                                                          |
+| `manifest`                                                     | The composition's `composition.json`, unchanged; null when taken down                  |
+| `preview`                                                      | Path of a rendered image of the scene (three-quarter front view); null when taken down |
+| `items`                                                        | The manifest's `items`, each `{ asset, position, rotation, scale? }`                   |
+| `credits`                                                      | Effective credits: the composition's own, then every pinned asset's effective credits  |
+| `results`                                                      | The validator's `results` list for this version                                        |
 
 ## Reading it
 

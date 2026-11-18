@@ -113,7 +113,7 @@ describe("site", () => {
       const h = read(p);
       expect(h, p).not.toContain("<script>alert");
       expect(h, p).not.toContain("<b>more</b>");
-      expect(h, p).not.toMatch(/href="(?!https:\/\/|\/propcommons\/|composition\.json|data:,")/);
+      expect(h, p).not.toMatch(/href="(?!https:\/\/|\/propcommons\/|composition\.json|data:,"|#)/);
     }
     const box = read("assets/mallory/box/v1/index.html");
     expect(box).toContain("Box &lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;");
