@@ -1,2 +1,1 @@
-// Milestone placeholder for @propcommons/mcp.
-export {};
+export { createServer, type ServerOptions } from "./server.ts";

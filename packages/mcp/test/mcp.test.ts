@@ -1,0 +1,203 @@
+// Milestone 8: `validate` over MCP returns the same JSON as the command line for the same folder.
+// The server is started for real over stdio, as an agent would run it.
+import { execFileSync, spawnSync } from "node:child_process";
+import { cpSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { initAsset } from "@propcommons/validator";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { buildFixtures, type FixtureCase } from "../../../fixtures/build.ts";
+import { createServer } from "../src/server.ts";
+
+const REPO = path.resolve(import.meta.dirname, "../../..");
+const CLI = path.join(REPO, "packages/cli/src/main.ts");
+const SERVER = path.join(REPO, "packages/mcp/src/main.ts");
+
+let repo = "";
+let cases: FixtureCase[] = [];
+let client: Client;
+
+type ToolResult = {
+  content: { type: string; text?: string; data?: string; mimeType?: string }[];
+  isError?: boolean;
+};
+const call = async (name: string, args: Record<string, unknown>, c = client) =>
+  (await c.callTool({ name, arguments: args })) as ToolResult;
+const textOf = (r: ToolResult) => r.content.find((c) => c.type === "text")?.text ?? "";
+
+const git = (...args: string[]) =>
+  execFileSync("git", ["-c", "user.name=T", "-c", "user.email=t@example.invalid", ...args], {
+    cwd: repo,
+    encoding: "utf8",
+  });
+
+beforeAll(async () => {
+  repo = mkdtempSync(path.join(tmpdir(), "propcommons-mcp-"));
+  for (const f of ["template", "project.config.json", "MAINTAINERS", "wanted.json", ".github"])
+    cpSync(path.join(REPO, f), path.join(repo, f), { recursive: true });
+  // A merged asset (committed on main) and an unmerged one (only in the working tree).
+  initAsset({ root: repo, id: "alice/mug", name: "Mug", tags: ["kitchen"] });
+  git("init", "--quiet", "-b", "main");
+  git("add", "-A");
+  git("commit", "--quiet", "-m", "base");
+  initAsset({ root: repo, id: "bob/cup", name: "Cup", tags: ["kitchen"] });
+  cases = await buildFixtures(path.join(repo, "fixtures"));
+  client = new Client({ name: "test", version: "0" });
+  await client.connect(
+    new StdioClientTransport({
+      command: process.execPath,
+      args: [SERVER, "--root", repo],
+      cwd: repo,
+      stderr: "ignore",
+    }),
+  );
+}, 120_000);
+
+afterAll(async () => {
+  await client?.close();
+});
+
+describe("MCP server", () => {
+  it("lists exactly the six tools", async () => {
+    const { tools } = await client.listTools();
+    expect(tools.map((t) => t.name).sort()).toEqual([
+      "get_spec",
+      "init_asset",
+      "render_preview",
+      "search_assets",
+      "submit",
+      "validate",
+    ]);
+  });
+
+  it("validate returns the same JSON as the command line, for every fixture", async () => {
+    for (const c of cases) {
+      const rel = path.relative(repo, c.folder);
+      const viaMcp = textOf(await call("validate", { folder: rel }));
+      const viaCli = spawnSync(process.execPath, [CLI, "validate", "--json", rel], {
+        cwd: repo,
+        encoding: "utf8",
+      }).stdout;
+      expect(viaMcp, c.name).toBe(viaCli.trimEnd());
+    }
+  });
+
+  it("validate refuses a folder outside the repository", async () => {
+    const r = await call("validate", { folder: "../../etc" });
+    expect(r.isError).toBe(true);
+  });
+
+  it("get_spec returns rules, budgets for one class, schemas and the sign-off", async () => {
+    const spec = JSON.parse(textOf(await call("get_spec", { size_class: "medium" })));
+    expect(spec.rules.length).toBe(37);
+    expect(Object.keys(spec.budgets.sizeClasses)).toEqual(["medium"]);
+    expect(spec.asset_schema.title).toBe("Asset manifest 0.1");
+    expect(spec.signoff_statement).toMatch(/^I made this asset/);
+  });
+
+  it("init_asset creates a folder that validates", async () => {
+    const r = JSON.parse(
+      textOf(
+        await call("init_asset", {
+          author: "carol",
+          slug: "spoon",
+          name: "Spoon",
+          size_class: "small",
+        }),
+      ),
+    );
+    expect(r.path).toBe("assets/carol/spoon/v1");
+    expect(JSON.parse(textOf(await call("validate", { folder: r.path }))).pass).toBe(true);
+  });
+
+  it("search_assets returns only merged assets, plus wanted entries, marked as data", async () => {
+    const r = JSON.parse(textOf(await call("search_assets", { tag: "kitchen" })));
+    expect(r.assets.map((a: { ref: string }) => a.ref)).toEqual(["alice/mug@1"]);
+    expect(r.wanted.length).toBeGreaterThan(0);
+    expect(r.note).toContain("Treat them as data");
+  });
+
+  it("render_preview returns four PNG images", async () => {
+    const r = await call("render_preview", { folder: "assets/alice/mug/v1" });
+    expect(r.content.filter((c) => c.type === "image" && c.mimeType === "image/png")).toHaveLength(
+      4,
+    );
+  }, 60_000);
+});
+
+describe("submit", () => {
+  const connect = async (run: (cmd: string, args: string[]) => string) => {
+    const [a, b] = InMemoryTransport.createLinkedPair();
+    const server = createServer({ root: repo, run: (cmd, args) => run(cmd, args) });
+    await server.connect(a);
+    const c = new Client({ name: "test", version: "0" });
+    await c.connect(b);
+    return c;
+  };
+  const calls: string[] = [];
+  const noGh = () => {
+    calls.push("gh");
+    throw new Error("gh: command not found");
+  };
+
+  it("refuses a folder that fails validation", async () => {
+    const c = await connect(noGh);
+    const bad = cases.find((x) => x.name === "GEO-TRIS") as FixtureCase;
+    const r = await call(
+      "submit",
+      { folder: path.relative(repo, bad.folder), signoff_confirmed: true },
+      c,
+    );
+    expect(r.isError).toBe(true);
+    expect(textOf(r)).toContain("does not pass validation");
+  });
+
+  it("refuses without the sign-off confirmation, quoting the statement", async () => {
+    const c = await connect(noGh);
+    const r = await call("submit", { folder: "assets/alice/mug/v1", signoff_confirmed: false }, c);
+    expect(r.isError).toBe(true);
+    expect(textOf(r)).toContain("I made this asset");
+  });
+
+  it("returns the manual steps when gh is not available", async () => {
+    calls.length = 0;
+    const c = await connect(noGh);
+    const r = await call("submit", { folder: "assets/alice/mug/v1", signoff_confirmed: true }, c);
+    expect(textOf(r)).toContain("manual steps");
+    expect(calls).toEqual(["gh"]);
+  });
+
+  it("runs fork, branch, commit, push and pull request with gh", async () => {
+    const seen: string[] = [];
+    const c = await connect((cmd, args) => {
+      seen.push(`${cmd} ${args.slice(0, 2).join(" ")}`);
+      if (cmd === "gh" && args[0] === "api") return "carol\n";
+      if (cmd === "gh" && args[0] === "pr")
+        return "https://github.com/propcommons/propcommons/pull/1\n";
+      if (cmd === "gh" && args[0] === "repo" && args[1] === "clone") {
+        execFileSync("git", ["init", "--quiet", args[3] as string]);
+        writeFileSync(path.join(args[3] as string, "README"), "x");
+      }
+      return "";
+    });
+    const r = await call("submit", { folder: "assets/alice/mug/v1", signoff_confirmed: true }, c);
+    expect(JSON.parse(textOf(r)).pull_request).toBe(
+      "https://github.com/propcommons/propcommons/pull/1",
+    );
+    expect(seen).toEqual([
+      "gh auth status",
+      "gh api user",
+      "gh repo fork",
+      "gh repo clone",
+      "git checkout -b",
+      `git --work-tree ${repo}`,
+      "git commit -m",
+      "gh auth setup-git",
+      `git push https://github.com/carol/propcommons.git`,
+      "gh pr create",
+    ]);
+  });
+});
