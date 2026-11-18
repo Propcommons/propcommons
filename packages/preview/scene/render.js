@@ -110,14 +110,15 @@ window.renderJob = async (job) => {
     cube.position.set(centre.x + right.x * offset, 0, centre.z + right.z * offset);
     const box = assetBox.clone().union(boundsOf(cube));
     fitStage(stage, box);
-    out[name] = snapshot(renderer, scene, frameCamera(box, dir));
+    // Fit the box's corners, not its bounding sphere, so long thin assets fill the frame.
+    out[name] = snapshot(renderer, scene, fitCameraToBox(frameCamera(box, dir), box, 0.86));
   }
 
   // Close-up: the asset alone, without the scale cube. See-through (transmissive) materials get a
   // striped card behind them, because clear glass on a plain grey background looks milky.
   scene.remove(cube);
   fitStage(stage, assetBox);
-  const thumbCamera = frameCamera(assetBox, viewDirection("front"), 1, 1.1);
+  const thumbCamera = fitCameraToBox(frameCamera(assetBox, viewDirection("front")), assetBox, 0.9);
   const backdrop = isTransmissive(asset) ? stripedCard(assetBox, viewDirection("front")) : null;
   if (backdrop) scene.add(backdrop);
   out.thumb = snapshot(renderer, scene, thumbCamera);
@@ -146,7 +147,11 @@ window.renderJob = async (job) => {
   const kitBox = new THREE.Box3();
   for (const o of row) kitBox.union(boundsOf(o));
   fitStage(stage, kitBox);
-  out.kit = snapshot(renderer, scene, frameCamera(kitBox, viewDirection("front")));
+  out.kit = snapshot(
+    renderer,
+    scene,
+    fitCameraToBox(frameCamera(kitBox, viewDirection("front")), kitBox, 0.88),
+  );
 
   const size = assetBox.getSize(new THREE.Vector3());
   out.bounds = [size.x, size.y, size.z];
@@ -215,7 +220,8 @@ window.renderThumb = async (job) => {
   stage.scene.add(model);
   const box = boundsOf(model);
   fitStage(stage, box);
-  const png = snapshot(renderer, stage.scene, frameCamera(box, viewDirection("front"), 1, 1.1));
+  const camera = fitCameraToBox(frameCamera(box, viewDirection("front")), box, 0.9);
+  const png = snapshot(renderer, stage.scene, camera);
   renderer.dispose();
   return png;
 };
