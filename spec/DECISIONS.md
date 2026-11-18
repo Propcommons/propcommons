@@ -302,3 +302,30 @@ up and still pass.
   bowl and the rehearsal scene) pass both rules.
 - **Items floating or sinking into each other stay advice** in `propcommons preview`, not rules:
   telling resting contact from a deliberate gap needs more than bounding boxes.
+
+## `propcommons settle` (19 November 2026)
+
+- **A straight drop, not physics.** Each item keeps its x, z, rotation and scale; only its height
+  changes. That is what "lower each item until it touches" asked people to do by hand, and it runs
+  in seconds where the rehearsal's Blender drop took 8.5 minutes (and a 14-item one never finished).
+- **Contact** is found with vertical rays: from the falling item's vertices down onto what is
+  placed, and from placed vertices up onto the falling item. Points every millimetre along long
+  edges catch edge-on-edge contacts (two boxes at an angle), which vertices alone miss.
+- **Order:** an item settles before any item that sits above it where they overlap, judged at the
+  heights given; otherwise lowest point first. Ordering by list position or by middle height both
+  failed on the rehearsal scene (a strawberry tucked under another; a bowl taller than its fruit).
+- **On the rehearsal scene** it puts every strawberry within 0.21 mm below where Blender's physics
+  left it (Blender's collision margin).
+- **It centres the footprint** too (CMP-CENTER), unless `--no-center`. It is a command-line tool
+  only; the MCP server's six tools are unchanged, and agents run it from the shell.
+
+## Glass in Godot (19 November 2026)
+
+- **`tools/godot/prop_commons.gd` approximates KHR_materials_transmission**, which Godot 4.7's glTF
+  importer ignores: alpha blending with the material's alpha scaled down to 12% at full
+  transmission, back faces drawn, and a quarter-strength KHR_materials_volume tint. In the gate
+  check's Godot picture the strawberries now show through the bowl.
+- **No refraction.** Godot's screen-space refraction gave an opaque, dark bowl in the gate check's
+  render, and the full attenuation colour made it dark teal; both were dropped.
+- **Only the runtime loader changes.** Dragging a `.glb` into the Godot editor still uses Godot's
+  importer and shows the opaque fallback, as the spec allows.

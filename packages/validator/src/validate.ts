@@ -511,6 +511,11 @@ async function validateComposition(
   return { spec: SPEC_VERSION, target, pass: passes(results), results, measured };
 }
 
+/** Reads a .glb file as a glTF-Transform document, with every extension the validator knows. */
+export async function readModelFile(file: string): Promise<Document> {
+  return getIO().readBinary(new Uint8Array(readFileSync(file)));
+}
+
 /** Vertex positions of a pinned asset's model, in its own frame; null if it cannot be read. */
 async function assetPoints(root: string, ref: string): Promise<Vec3[] | null> {
   const [id, v] = ref.split("@");

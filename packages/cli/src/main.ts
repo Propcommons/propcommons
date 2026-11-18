@@ -5,6 +5,7 @@
 //   propcommons preview <folder> [--out dir]
 //   propcommons check-pr --base <dir> --head <dir> --changed <file> --author <login> --body-file <file> [--json]
 //   propcommons build-index [--out index.json]
+//   propcommons settle <composition folder> [--dry-run] [--no-center] [--json]
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -25,6 +26,7 @@ import {
   type ValidationResult,
   validateFolder,
 } from "@propcommons/validator";
+import { cmdSettle } from "./settle.ts";
 
 const HELP = `propcommons — tools for the Prop Commons asset library
 
@@ -39,6 +41,9 @@ Commands:
   check-pr                  (CI) Run the pull-request rules and validate the folders it adds.
                             Options: --base <dir> --head <dir> --changed <file> --author <login>
                                      --body-file <file> [--json]
+  settle <folder>           Drop each item of a composition straight down, in order, until it
+                            rests on the ground or an earlier item, and centre the scene.
+                            Options: --dry-run, --no-center, --json
   build-index               Validate everything and write index.json. Option: --out <file>
 
 Exit codes: 0 pass, 1 fail, 2 the tool could not run.`;
@@ -266,6 +271,8 @@ export async function main(argv: string[]): Promise<number> {
         return await cmdCheckPr(rest);
       case "build-index":
         return await cmdBuildIndex(rest);
+      case "settle":
+        return await cmdSettle(rest);
       case undefined:
       case "help":
       case "--help":

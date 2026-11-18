@@ -193,7 +193,8 @@ BSDF's Transmission Weight (1 for clear glass) and IOR (about 1.5); give the gla
 thickness, keep Alpha at 1 (don't use transparency or "Blend"), keep Roughness low, and set Base
 Color to the glass's tint. In an engine without glass support, that Base Color is what people
 see, so a pale tint (not pure white) still reads as a bowl or bottle. The previews include a
-`fallback.png` showing exactly that.
+`fallback.png` showing exactly that. Godot's own importer is one such engine; the runtime loader
+`tools/godot/prop_commons.gd` approximates the glass with transparency instead.
 
 ### Export from Blender
 
@@ -361,12 +362,23 @@ npx propcommons validate compositions/yourname/<slug>/v1
 See `compositions/mattashes/fruit-bowl/v1/composition.json` for a working one.
 
 **Placing things so they rest.** An asset's origin is the centre of its footprint at ground level,
-so an item standing on a surface at height `h` gets `position[1] = h`. For things in a bowl or a
-heap, either lower each item until it first touches what's below it (measure the models' vertices),
-or run a physics drop in Blender and copy the settled positions and rotations. For a drop: use the
+so an item standing on a surface at height `h` gets `position[1] = h`. For anything stacked, in a
+bowl or in a heap, let the tool find the heights: choose each item's x, z and rotation, give it a
+rough height (higher for what should end up on top), and run
+
+```bash
+npx propcommons settle compositions/yourname/<slug>/v1
+```
+
+It drops every item straight down, bottom of the pile first, until it rests on the ground or on
+what's under it, centres the scene, and rewrites `composition.json` (`--dry-run` only shows what
+would change). It takes seconds and needs no physics, but nothing rolls or slides: an item stays
+where you put it in x and z, at the rotation you gave it. For a natural tumbled heap, run a physics
+drop in Blender instead and copy the settled positions and rotations. For a drop: use the
 models' real shapes for hollow things (a bowl), give the falling items their own pivot at their
 centre (an asset's origin is at its base, not its centre of mass), and expect small objects to need
-a smaller collision margin than Blender's default. A `scale` between about 0.85 and 1.1 is fine for
+a smaller collision margin than Blender's default. Running `settle` afterwards closes the small
+gap the collision margin leaves. A `scale` between about 0.85 and 1.1 is fine for
 natural variation (no two strawberries are the same size).
 
 **Check it before you push:**
