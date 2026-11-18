@@ -1,6 +1,7 @@
 {
   "spec": "0.1",
   "about": "Rule registry. Each rule's ID, level, title and message/hint templates. Placeholders in braces are filled by the validator. IDs are never reused or renamed. 'applies' says where a rule runs: asset or composition folders, and 'runner' says which tool runs it (validate = the folder validator, check-pr = needs git and pull-request context).",
+  "signoffStatement": "I made this asset, or I have the right to release every part of it, including its textures, scans and any AI tool output. I release it under CC0 1.0. It contains no real brands, logos, recognisable characters or likenesses of real people.",
   "rules": [
     {
       "id": "FOLDER-FILES",

@@ -8,7 +8,11 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "@gltf-transform/core": "4.5.1",
+    "@gltf-transform/extensions": "4.5.1",
+    "@gltf-transform/functions": "4.5.1",
     "ajv": "8.20.0",
-    "ajv-formats": "3.0.1"
+    "ajv-formats": "3.0.1",
+    "gltf-validator": "2.0.0-dev.3.10"
   }
 }

@@ -17,6 +17,7 @@
   "include": [
     "packages/*/src/**/*.ts",
     "packages/*/test/**/*.ts",
+    "tools/**/*.ts",
     "spec/**/*.ts",
     "fixtures/**/*.ts",
     "test/**/*.ts",
