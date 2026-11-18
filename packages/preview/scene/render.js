@@ -108,4 +108,14 @@ window.renderJob = async (job) => {
   return out;
 };
 
+/** Loads each model and returns its world-space size [x, y, z] in metres. */
+window.measureBounds = async (urls) => {
+  const sizes = [];
+  for (const url of urls) {
+    const size = boundsOf(await loadModel(url)).getSize(new THREE.Vector3());
+    sizes.push([size.x, size.y, size.z]);
+  }
+  return sizes;
+};
+
 window.previewReady = true;

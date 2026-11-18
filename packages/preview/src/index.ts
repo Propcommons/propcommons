@@ -97,66 +97,11 @@ export async function renderPreviews(
     : "small";
   const neighbours = pickNeighbours(root, manifest);
 
-  // Only these files are served to the page; every other request is refused.
-  const served = new Map<string, string>([
-    ["/scene/render.html", path.join(SCENE_DIR, "render.html")],
-    ["/scene/render.js", path.join(SCENE_DIR, "render.js")],
-    ["/scene/stage.js", path.join(SCENE_DIR, "stage.js")],
-    ["/scene/studio.hdr", path.join(SCENE_DIR, "studio.hdr")],
+  const { browser, page, errors } = await openScenePage([
     ["/files/model.glb", model],
     ...neighbours.map((n, i): [string, string] => [`/files/neighbour-${i}.glb`, n.model]),
   ]);
-  const contentType = (p: string) =>
-    p.endsWith(".html")
-      ? "text/html"
-      : p.endsWith(".js")
-        ? "text/javascript"
-        : p.endsWith(".glb")
-          ? "model/gltf-binary"
-          : "application/octet-stream";
-
-  const browser = await chromium.launch({
-    args: [
-      "--use-angle=swiftshader",
-      "--enable-unsafe-swiftshader",
-      "--disable-gpu-driver-bug-workarounds",
-    ],
-  });
   try {
-    const context = await browser.newContext({
-      viewport: { width: 1024, height: 1024 },
-      deviceScaleFactor: 1,
-    });
-    await context.route("**/*", async (route) => {
-      const url = new URL(route.request().url());
-      if (url.origin !== ORIGIN) return route.abort();
-      let file = served.get(url.pathname);
-      if (!file && url.pathname.startsWith("/vendor/three/")) {
-        const rel = url.pathname.slice("/vendor/three/".length);
-        const candidate = rel.startsWith("addons/")
-          ? path.join(THREE_DIR, "examples/jsm", rel.slice("addons/".length))
-          : path.join(THREE_DIR, "build", rel);
-        // Stay inside the three package.
-        if (candidate.startsWith(THREE_DIR + path.sep) && existsSync(candidate)) file = candidate;
-      }
-      if (!file) return route.fulfill({ status: 404, body: "not found" });
-      return route.fulfill({
-        status: 200,
-        contentType: contentType(file),
-        body: readFileSync(file),
-      });
-    });
-    const page = await context.newPage();
-    const errors: string[] = [];
-    page.on("pageerror", (e) => errors.push(e.message));
-    await page.goto(`${ORIGIN}/scene/render.html`);
-    await page.waitForFunction(
-      () => (window as unknown as { previewReady?: boolean }).previewReady === true,
-      null,
-      {
-        timeout: 30_000,
-      },
-    );
     const shots = (await page.evaluate(
       (job) =>
         (
@@ -180,6 +125,92 @@ export async function renderPreviews(
       files[view] = file;
     }
     return { files, neighbours: neighbours.map((n) => n.ref), bounds_m: shots.bounds };
+  } finally {
+    await browser.close();
+  }
+}
+
+/**
+ * Opens the reference scene page in headless Chromium. Only the scene, the pinned Three.js and
+ * the given extra files are served; every other request is refused.
+ */
+async function openScenePage(extra: [string, string][]) {
+  const served = new Map<string, string>([
+    ["/scene/render.html", path.join(SCENE_DIR, "render.html")],
+    ["/scene/render.js", path.join(SCENE_DIR, "render.js")],
+    ["/scene/stage.js", path.join(SCENE_DIR, "stage.js")],
+    ["/scene/studio.hdr", path.join(SCENE_DIR, "studio.hdr")],
+    ...extra,
+  ]);
+  const contentType = (p: string) =>
+    p.endsWith(".html")
+      ? "text/html"
+      : p.endsWith(".js")
+        ? "text/javascript"
+        : p.endsWith(".glb")
+          ? "model/gltf-binary"
+          : "application/octet-stream";
+  const browser = await chromium.launch({
+    args: [
+      "--use-angle=swiftshader",
+      "--enable-unsafe-swiftshader",
+      "--disable-gpu-driver-bug-workarounds",
+    ],
+  });
+  const context = await browser.newContext({
+    viewport: { width: 1024, height: 1024 },
+    deviceScaleFactor: 1,
+  });
+  await context.route("**/*", async (route) => {
+    const url = new URL(route.request().url());
+    if (url.origin !== ORIGIN) return route.abort();
+    let file = served.get(url.pathname);
+    if (!file && url.pathname.startsWith("/vendor/three/")) {
+      const rel = url.pathname.slice("/vendor/three/".length);
+      const candidate = rel.startsWith("addons/")
+        ? path.join(THREE_DIR, "examples/jsm", rel.slice("addons/".length))
+        : path.join(THREE_DIR, "build", rel);
+      // Stay inside the three package.
+      if (candidate.startsWith(THREE_DIR + path.sep) && existsSync(candidate)) file = candidate;
+    }
+    if (!file) return route.fulfill({ status: 404, body: "not found" });
+    return route.fulfill({ status: 200, contentType: contentType(file), body: readFileSync(file) });
+  });
+  const page = await context.newPage();
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  try {
+    await page.goto(`${ORIGIN}/scene/render.html`);
+    await page.waitForFunction(
+      () => (window as unknown as { previewReady?: boolean }).previewReady === true,
+      null,
+      { timeout: 30_000 },
+    );
+  } catch (e) {
+    await browser.close();
+    throw e;
+  }
+  return { browser, page, errors };
+}
+
+/**
+ * Loads each .glb with Three.js's GLTFLoader, as a game or web page would, and returns its size
+ * in metres from world-space vertex positions. Used by the import smoke tests.
+ */
+export async function measureInThree(models: string[]): Promise<[number, number, number][]> {
+  const { browser, page, errors } = await openScenePage(
+    models.map((m, i): [string, string] => [`/files/m${i}.glb`, path.resolve(m)]),
+  );
+  try {
+    const sizes = (await page.evaluate(
+      (urls) =>
+        (
+          window as unknown as { measureBounds(u: string[]): Promise<[number, number, number][]> }
+        ).measureBounds(urls),
+      models.map((_, i) => `/files/m${i}.glb`),
+    )) as [number, number, number][];
+    if (errors.length) throw new Error(`The page failed: ${errors.join("; ")}`);
+    return sizes;
   } finally {
     await browser.close();
   }

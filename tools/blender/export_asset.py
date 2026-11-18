@@ -23,9 +23,10 @@ Options:
     --keep-origin            keep the object origin instead of re-centring
     --collision NAME         collection holding collision hulls (default: collision)
 
-Tested with: NOT TESTED. This script was written without access to Blender, so it has not been
-run. It targets Blender 4.2 LTS and later. If you test it, please update this line with the
-versions that worked, and report problems as a GitHub issue.
+Tested with: Blender 5.3.0 on macOS (arm64), by test/blender.test.ts, which builds a messy scene
+with tools/blender/make_test_scene.py, exports it with this script and validates the result.
+Older versions may work: exporter options this Blender doesn't know are skipped. Please report
+problems as a GitHub issue.
 
 License: MIT (see LICENSE in the repository root).
 """

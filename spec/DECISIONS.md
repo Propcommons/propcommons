@@ -149,3 +149,19 @@ build choices, not spec changes: any of them can be reversed by the maintainer.
   would give for a first contact.
 - **Repository tooling never reformats contributed content.** Biome ignores `assets/` and
   `compositions/`.
+
+## Import smoke tests
+
+- **Three.js runs in CI; Blender and Godot run where installed.** `test/smoke.test.ts` loads every
+  seed asset in all three and compares sizes with the validator's within 1 mm. Blender and Godot
+  are found on the machine (or through `BLENDER` and `GODOT`) and skipped when absent; CI does not
+  install them, so for CI they are manual steps. Last run with all three: Blender 5.3.0 and
+  Godot 4.7.2 on macOS, 18 November 2026.
+- **Godot reads geometry from its glTF importer state**, not from a generated scene, and skips
+  textures: headless Godot has no real renderer, keeps no mesh data and can crash on textures.
+- **Engines only ever see copies** of the models, in a scratch folder, because importers may write
+  extracted textures next to the file they import.
+- **The Blender export script is tested** by building a messy scene with
+  `tools/blender/make_test_scene.py` (unapplied scale and rotation, off-centre and floating,
+  live modifiers, vertex colours, a texture, a collision hull, a camera and a light), exporting it,
+  and validating the result with no edits.
