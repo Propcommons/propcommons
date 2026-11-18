@@ -1,0 +1,18 @@
+{
+  "name": "propcommons",
+  "version": "0.0.1",
+  "description": "Prop Commons, an open library of CC0 game props. This package only reserves the name; the tools run inside a clone of the repository.",
+  "license": "MIT",
+  "homepage": "https://propcommons.github.io/propcommons/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Propcommons/propcommons.git"
+  },
+  "bin": {
+    "propcommons": "index.js"
+  },
+  "files": ["index.js", "README.md"],
+  "engines": {
+    "node": ">=18"
+  }
+}
