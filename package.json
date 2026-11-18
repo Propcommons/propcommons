@@ -1,0 +1,30 @@
+{
+  "name": "propcommons-workspace",
+  "private": true,
+  "description": "Prop Commons: an open library of CC0 game assets that all follow one contract.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=26.13.0"
+  },
+  "workspaces": [
+    "packages/validator",
+    "packages/cli",
+    "packages/preview",
+    "packages/mcp",
+    "packages/site"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "typecheck": "tsc -p tsconfig.json",
+    "check": "npm run lint && npm run typecheck && npm test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.6.8",
+    "@types/node": "26.6.6",
+    "typescript": "7.0.2",
+    "vitest": "5.1.1"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "Prop Commons",
+  "id": "propcommons",
+  "github": {
+    "owner": "propcommons",
+    "repo": "propcommons",
+    "maintainers": ["mattashes"]
+  },
+  "site": {
+    "url": "https://propcommons.github.io/propcommons/",
+    "basePath": "/propcommons/",
+    "final": false
+  },
+  "schemaBaseUrl": "https://example.org/spec/0.1/",
+  "licenses": {
+    "code": "MIT",
+    "assets": "CC0-1.0",
+    "spec": "CC-BY-4.0"
+  },
+  "specVersion": "0.1"
+}
