@@ -226,6 +226,23 @@ export async function renderCompositionImage(
   outFile: string,
   size = { width: 1600, height: 1000 },
 ): Promise<string> {
+  return (await loadCompositionInThree(items, outFile, size)).file;
+}
+
+export interface PlacedBounds {
+  min: number[];
+  max: number[];
+}
+
+/**
+ * Loads a composition with Three.js's GLTFLoader, as a web page would, renders it to a PNG and
+ * returns each placed item's world-space bounds in metres. Used by the v0 gate check.
+ */
+export async function loadCompositionInThree(
+  items: CompositionItem[],
+  outFile: string,
+  size = { width: 1600, height: 1000 },
+): Promise<{ file: string; items: PlacedBounds[] }> {
   const models = [...new Set(items.map((i) => path.resolve(i.model)))];
   const { browser, page, errors } = await openScenePage(
     models.map((m, i): [string, string] => [`/files/c${i}.glb`, m]),
@@ -249,7 +266,10 @@ export async function renderCompositionImage(
     if (errors.length) throw new Error(`The preview page failed: ${errors.join("; ")}`);
     mkdirSync(path.dirname(outFile), { recursive: true });
     writeFileSync(outFile, Buffer.from(data.slice("data:image/png;base64,".length), "base64"));
-    return outFile;
+    const bounds = (await page.evaluate(
+      () => (window as unknown as { compositionBounds: PlacedBounds[] }).compositionBounds,
+    )) as PlacedBounds[];
+    return { file: outFile, items: bounds };
   } finally {
     await browser.close();
   }

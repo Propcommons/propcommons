@@ -132,6 +132,8 @@ window.renderComposition = async (job) => {
   for (const item of job.items)
     if (!models.has(item.url)) models.set(item.url, await loadModel(item.url));
   const box = new THREE.Box3();
+  // Each placed item's world-space bounds, for checks that compare engines.
+  window.compositionBounds = [];
   for (const item of job.items) {
     const obj = models.get(item.url).clone(true);
     obj.position.fromArray(item.position);
@@ -139,7 +141,9 @@ window.renderComposition = async (job) => {
     obj.scale.setScalar(item.scale ?? 1);
     enableShadows(obj);
     stage.scene.add(obj);
-    box.union(boundsOf(obj));
+    const b = boundsOf(obj);
+    window.compositionBounds.push({ min: b.min.toArray(), max: b.max.toArray() });
+    box.union(b);
   }
   fitStage(stage, box);
   const camera = fitCameraToBox(

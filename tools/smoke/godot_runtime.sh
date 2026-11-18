@@ -3,7 +3,7 @@
 # (not in the editor), to check that Prop Commons assets load at runtime.
 #   tools/smoke/godot_runtime.sh check <glb>...                      (headless, as a game)
 #   tools/smoke/godot_runtime.sh check-editor <glb>...               (headless, editor mode)
-#   tools/smoke/godot_runtime.sh render <composition folder> <out.png>  (opens a window briefly)
+#   tools/smoke/godot_runtime.sh render <composition folder> <out.png> [library root]  (opens a window briefly)
 # Files are passed by absolute path and only read. GODOT can point at the Godot binary.
 # License: MIT (see LICENSE in the repository root).
 set -euo pipefail
@@ -66,7 +66,8 @@ case "${1:-}" in
     ;;
   render)
     comp="$(abs "$2")/composition.json"
-    "$GODOT" --path "$PROJ" --resolution 1280x800 -- render "$comp" "$REPO" "$(abs "$3")"
+    library="${4:-$REPO}"
+    "$GODOT" --path "$PROJ" --resolution 1280x800 -- render "$comp" "$(cd "$library" && pwd)" "$(abs "$3")"
     ;;
   *)
     echo "usage: $0 check|check-editor <glb>... | render <composition folder> <out.png>" >&2

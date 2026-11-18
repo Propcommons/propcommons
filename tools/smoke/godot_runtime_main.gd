@@ -30,6 +30,22 @@ func _relative_xform(node: Node, top: Node) -> Transform3D:
 	return t
 
 
+## World-space bounds from the mesh's vertices. Transforming a mesh's own AABB would overstate a
+## rotated object's size, so this measures what Three.js and Blender measure.
+func _vertex_aabb(mi: MeshInstance3D, xform: Transform3D) -> AABB:
+	var lo := Vector3(INF, INF, INF)
+	var hi := Vector3(-INF, -INF, -INF)
+	for s in mi.mesh.get_surface_count():
+		var arrays := mi.mesh.surface_get_arrays(s)
+		for v in arrays[Mesh.ARRAY_VERTEX]:
+			var w: Vector3 = xform * v
+			lo = lo.min(w)
+			hi = hi.max(w)
+	if lo.x == INF:
+		return xform * mi.mesh.get_aabb()  # no vertex data (headless): fall back
+	return AABB(lo, hi - lo)
+
+
 func _report(scene: Node3D) -> Dictionary:
 	var box := AABB()
 	var first := true
@@ -110,7 +126,7 @@ func _render(composition_path: String, library: String, png: String) -> void:
 		var first := true
 		for n in item.find_children("*", "MeshInstance3D", true, false):
 			var mi := n as MeshInstance3D
-			var bb := _relative_xform(mi, self) * mi.mesh.get_aabb()
+			var bb := _vertex_aabb(mi, _relative_xform(mi, self))
 			b = bb if first else b.merge(bb)
 			first = false
 		all = b if i == 0 else all.merge(b)
