@@ -28,9 +28,11 @@ beforeAll(async () => {
 afterAll(() => close());
 
 describe("seed content", () => {
-  it("has five assets and one composition by the maintainer", () => {
-    expect(readdirSync(path.join(REPO, "assets/mattashes")).sort()).toEqual(SEEDS);
-    expect(readdirSync(path.join(REPO, "compositions/mattashes"))).toEqual(["fruit-bowl"]);
+  // The maintainer's folder holds later assets too (the gate rehearsal's), so check the seeds are
+  // all there rather than that they are all there is.
+  it("has the five seed assets and the seed composition by the maintainer", () => {
+    expect(readdirSync(path.join(REPO, "assets/mattashes"))).toEqual(expect.arrayContaining(SEEDS));
+    expect(readdirSync(path.join(REPO, "compositions/mattashes"))).toContain("fruit-bowl");
   });
 
   it("every seed passes validation with no warnings", async () => {
@@ -98,16 +100,18 @@ describe("seed content in the browser", () => {
     return { browser, page, errors };
   }
 
-  it("the gallery shows all five assets", async () => {
+  it("the gallery shows all five seed assets", async () => {
     const { browser, page, errors } = await open("");
     const names = await page.locator("#gallery .card .card-title").allTextContents();
-    expect(names.sort()).toEqual([
-      "Apple, red",
-      "Bowl, turned wood",
-      "Cutting board, wooden",
-      "Kitchen knife",
-      "Lemon",
-    ]);
+    expect(names).toEqual(
+      expect.arrayContaining([
+        "Apple, red",
+        "Bowl, turned wood",
+        "Cutting board, wooden",
+        "Kitchen knife",
+        "Lemon",
+      ]),
+    );
     expect(errors.filter((e) => !e.includes("404"))).toEqual([]); // previews are not rendered in this test
     await browser.close();
   }, 60_000);

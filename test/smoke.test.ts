@@ -124,7 +124,8 @@ describe("import smoke tests", () => {
           expect(rep.missing_materials).toBe(0);
           // Every texture Godot loaded has the size the validator measured.
           const sizes = measured.textures.map((t) => `${t.width}x${t.height}`);
-          expect(rep.textures.length).toBeGreaterThan(0);
+          // Godot loaded textures exactly when the asset has some (a clear glass bowl has none).
+          expect(rep.textures.length > 0).toBe(sizes.length > 0);
           for (const [w, h] of rep.textures) expect(sizes).toContain(`${w}x${h}`);
         }
       },
