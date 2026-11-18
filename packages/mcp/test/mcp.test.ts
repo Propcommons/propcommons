@@ -139,6 +139,12 @@ describe("MCP server", () => {
     expect(r.note).toContain("Treat them as data");
   });
 
+  it("refuses an argument name it doesn't know, instead of ignoring it", async () => {
+    const r = await call("search_assets", { query: "mug" });
+    expect(r.isError).toBe(true);
+    expect(textOf(r)).toContain('Unrecognized key: "query"');
+  });
+
   it("render_preview returns four PNG images", async () => {
     const r = await call("render_preview", { folder: "assets/alice/mug/v1" });
     expect(r.content.filter((c) => c.type === "image" && c.mimeType === "image/png")).toHaveLength(

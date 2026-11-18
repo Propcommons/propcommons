@@ -85,9 +85,9 @@ export function createServer(o: ServerOptions): McpServer {
       title: "Get the Prop Commons spec",
       description:
         "Returns the asset spec as JSON: every rule (ID, level, title, message and hint templates), the budgets (optionally only for one size class), the asset and composition manifest schemas, and the sign-off statement. Read this before making an asset.",
-      inputSchema: {
+      inputSchema: z.strictObject({
         size_class: sizeClass.optional().describe("Only return budgets for this size class."),
-      },
+      }),
     },
     async ({ size_class }) => {
       const budgets = size_class
@@ -115,7 +115,7 @@ export function createServer(o: ServerOptions): McpServer {
       title: "Create a new asset folder",
       description:
         "Copies the template into assets/<author>/<slug>/v1 with the manifest filled in, and returns the folder path. model.glb is a 10 cm placeholder box: replace it with the real model (export from Blender with tools/blender/export_asset.py, or write a generator with @gltf-transform/core as tools/seed/build.ts does), then call validate.",
-      inputSchema: {
+      inputSchema: z.strictObject({
         author: z.string().describe("The contributor's GitHub handle, lower case."),
         slug: z.string().describe("Lower-case letters, digits and hyphens, e.g. strawberry-whole."),
         name: z.string().describe("Display name in English, up to 80 characters."),
@@ -137,7 +137,7 @@ export function createServer(o: ServerOptions): McpServer {
           .describe(
             'The person\'s credit roles. Defaults to ["directed"] when ai_assisted is true (they directed the AI), otherwise ["modeled"].',
           ),
-      },
+      }),
     },
     async ({ author, slug, name, size_class, tags, ai_assisted, tools, roles }) => {
       try {
@@ -165,9 +165,9 @@ export function createServer(o: ServerOptions): McpServer {
       title: "Validate a version folder",
       description:
         "Validates one asset or composition version folder and returns the result object: pass, every failed rule with what was measured, the limit and a hint to fix it, and the measured data. Identical to `propcommons validate --json`. Fix every error and call again until pass is true.",
-      inputSchema: {
+      inputSchema: z.strictObject({
         folder: z.string().describe("Path of the version folder, relative to the repository root."),
-      },
+      }),
     },
     async ({ folder }) => {
       try {
@@ -193,11 +193,11 @@ export function createServer(o: ServerOptions): McpServer {
       title: "Render the preview images",
       description:
         "Renders the four 1024 × 1024 preview images a reviewer will see: three-quarter front, side and top beside a scale cube (10 cm for small assets, 1 m otherwise), and the asset beside up to two existing assets of the same size class. Use them to check proportions, resting pose, facing and fit.",
-      inputSchema: {
+      inputSchema: z.strictObject({
         folder: z
           .string()
           .describe("Path of the asset version folder, relative to the repository root."),
-      },
+      }),
     },
     async ({ folder }) => {
       try {
@@ -237,11 +237,11 @@ export function createServer(o: ServerOptions): McpServer {
       title: "Search the library",
       description:
         "Searches assets already merged into the repository (the main branch) and the open entries in wanted.json. Use it to find assets to compose with, to avoid duplicates, and to pick something the kit needs.",
-      inputSchema: {
+      inputSchema: z.strictObject({
         text: z.string().optional().describe("Words to match in the ID, name or tags."),
         tag: z.string().optional(),
         size_class: sizeClass.optional(),
-      },
+      }),
     },
     async ({ text: q, tag, size_class }) => {
       const ref = mergedRef(root);
@@ -295,12 +295,12 @@ export function createServer(o: ServerOptions): McpServer {
     {
       title: "Open a pull request for an asset",
       description: `Validates the folder, then opens a pull request that adds only that folder, using the contributor's own GitHub CLI (gh) login: fork, branch, commit, push, pull request. Refuses on any validation error, on a folder under another person's handle, and on the placeholder model. BEFORE calling this, show the user the following sign-off statement word for word and ask them to confirm it; set signoff_confirmed to true only after they explicitly say yes. Their yes is the sign-off: the tool then ticks the box in the pull request for them. Never confirm it on their behalf. Statement: "${SIGNOFF_STATEMENT}"`,
-      inputSchema: {
+      inputSchema: z.strictObject({
         folder: z.string().describe("Path of the version folder, relative to the repository root."),
         signoff_confirmed: z
           .boolean()
           .describe("True only if the user personally confirmed the sign-off statement just now."),
-      },
+      }),
     },
     async ({ folder, signoff_confirmed }) => {
       const dir = resolveFolder(root, folder);
