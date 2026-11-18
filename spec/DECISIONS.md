@@ -97,3 +97,22 @@ build choices, not spec changes: any of them can be reversed by the maintainer.
   setting should be on so a maintainer approves each run from a new contributor.
 - **assets-pr also runs when the description is edited**, so ticking the sign-off box re-runs it.
 - **Symbolic links anywhere in a pull request fail the asset check.** They are never followed.
+
+## Previews
+
+- **The HDRI is generated, not downloaded.** `tools/hdri/build.ts` writes a 256 × 128 studio
+  environment (soft dome, one key light, one fill, darker ground). It is CC0 because the project
+  made it, and its source is that script (`packages/preview/scene/SOURCES.md`).
+- **Views.** All three are perspective (30° field of view) and framed to the bounding sphere of the
+  asset plus the scale cube, with a 1.2 margin: three-quarter front (35° round from the front, 22°
+  up), side (from +X, 6° up) and top (straight down, front at the bottom). The scale cube sits to
+  the camera's right of the asset in each view.
+- **Kit view.** Up to two other assets with the same size class, using each one's latest live
+  version, chosen by most shared tags and then by ID, are placed in a row with the new asset in the
+  middle, viewed from the three-quarter front.
+- **Rendering.** Headless Chromium with SwiftShader (no GPU), 1024 × 1024, pixel ratio 1,
+  antialiasing on, neutral tone mapping. Images are read from the canvas, so window chrome never
+  appears. The page loads only files the renderer serves it; every other request is refused.
+- **In CI**, previews are rendered for each added asset whose file passes the file checks, and are
+  uploaded with the results. A rendering failure is logged but does not fail the check; the rules
+  decide pass or fail.

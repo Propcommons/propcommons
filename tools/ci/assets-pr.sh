@@ -11,6 +11,8 @@
 #   PR_AUTHOR  the pull request author's login
 #   PR_BODY    the pull request description
 #   OUT_DIR    where result.json, summary.md and previews/ are written
+# Optional:
+#   RENDER_PREVIEWS=0  skip preview rendering (needs Playwright's Chromium installed)
 set -euo pipefail
 
 mkdir -p "$OUT_DIR"
@@ -25,6 +27,10 @@ node "$BASE_DIR/packages/cli/src/main.ts" check-pr \
   --json > "$OUT_DIR/result.json"
 code=$?
 set -e
+
+if [ "${RENDER_PREVIEWS:-1}" = "1" ]; then
+  node "$BASE_DIR/tools/ci/previews.ts" "$OUT_DIR/result.json" "$HEAD_DIR" "$OUT_DIR/previews" || true
+fi
 
 node "$BASE_DIR/tools/ci/summary.ts" "$OUT_DIR/result.json" > "$OUT_DIR/summary.md"
 if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then cat "$OUT_DIR/summary.md" >> "$GITHUB_STEP_SUMMARY"; fi

@@ -31,6 +31,7 @@ jobs:
           package-manager-cache: false
 
       - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx playwright install --with-deps --only-shell chromium
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test

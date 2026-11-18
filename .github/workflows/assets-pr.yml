@@ -44,6 +44,10 @@ jobs:
         working-directory: base
         run: npm ci --ignore-scripts --no-audit --no-fund
 
+      - name: Install the headless browser for previews
+        working-directory: base
+        run: npx playwright install --with-deps --only-shell chromium
+
       - name: Check out the pull request as data
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
