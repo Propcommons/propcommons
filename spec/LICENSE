@@ -1,0 +1,8 @@
+The Prop Commons specification text in this folder (SPEC.md and the
+explanatory text in the other files) is licensed under the Creative Commons
+Attribution 4.0 International License (CC BY 4.0).
+
+Full legal text: https://creativecommons.org/licenses/by/4.0/legalcode
+
+The JSON schemas and the rule and budget files are also made available under
+the MIT License (see ../LICENSE), so tools can embed them freely.

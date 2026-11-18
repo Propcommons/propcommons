@@ -1,0 +1,59 @@
+{
+  "spec": "0.1",
+  "about": "Every limit the validator checks. Proposed starting values from the spec's Size classes and budgets section; revisit once the first kit exists. 1 MB = 1,000,000 bytes.",
+  "sizeClasses": {
+    "small": {
+      "minLongestSide_m": 0.01,
+      "maxLongestSide_m": 0.3,
+      "minInclusive": true,
+      "maxTriangles": 5000,
+      "maxTextureSide_px": 1024,
+      "maxMaterials": 2,
+      "maxFileBytes": 5000000
+    },
+    "medium": {
+      "minLongestSide_m": 0.3,
+      "maxLongestSide_m": 1.2,
+      "minInclusive": false,
+      "maxTriangles": 15000,
+      "maxTextureSide_px": 2048,
+      "maxMaterials": 3,
+      "maxFileBytes": 10000000
+    },
+    "large": {
+      "minLongestSide_m": 1.2,
+      "maxLongestSide_m": 4.0,
+      "minInclusive": false,
+      "maxTriangles": 40000,
+      "maxTextureSide_px": 2048,
+      "maxMaterials": 4,
+      "maxFileBytes": 10000000
+    }
+  },
+  "files": {
+    "maxManifestBytes": 65536,
+    "maxAnyFileBytes": 10000000
+  },
+  "extensionAllowlist": ["KHR_materials_transmission", "KHR_materials_volume", "KHR_materials_ior"],
+  "imageMimeTypes": ["image/png", "image/jpeg"],
+  "origin": {
+    "centerFraction": 0.25
+  },
+  "collision": {
+    "maxHulls": 8,
+    "maxHullVertices": 64,
+    "boundsTolerance": 0.05,
+    "convexTolerance_m": 0.0005
+  },
+  "composition": {
+    "minItems": 2,
+    "maxItems": 200,
+    "minScale": 0.5,
+    "maxScale": 2
+  },
+  "tolerances": {
+    "length_m": 0.001,
+    "scale": 0.0001,
+    "quaternionLength": 0.001
+  }
+}

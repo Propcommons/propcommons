@@ -1,0 +1,350 @@
+{
+  "spec": "0.1",
+  "about": "Rule registry. Each rule's ID, level, title and message/hint templates. Placeholders in braces are filled by the validator. IDs are never reused or renamed. 'applies' says where a rule runs: asset or composition folders, and 'runner' says which tool runs it (validate = the folder validator, check-pr = needs git and pull-request context).",
+  "rules": [
+    {
+      "id": "FOLDER-FILES",
+      "level": "error",
+      "applies": ["asset", "composition"],
+      "runner": "validate",
+      "title": "The version folder holds only the expected files",
+      "message": "{detail}",
+      "hint": "An asset folder holds asset.json, model.glb and optionally collision.glb; a composition folder holds only composition.json. Remove or rename anything else."
+    },
+    {
+      "id": "FILE-SIZE",
+      "level": "error",
+      "applies": ["asset", "composition"],
+      "runner": "validate",
+      "title": "Each file is within the size budget",
+      "message": "{file} is {measured} bytes; the limit is {limit} bytes{context}.",
+      "unit": "bytes",
+      "hint": "Reduce the file: lower the texture resolution, use JPEG for photographic colour maps, or remove unused data, then export again."
+    },
+    {
+      "id": "MAN-SCHEMA",
+      "level": "error",
+      "applies": ["asset"],
+      "runner": "validate",
+      "title": "asset.json validates against the schema",
+      "message": "asset.json {detail}",
+      "hint": "Fix the field named in the message so asset.json matches spec/asset.schema.json. Run `propcommons validate` again to check."
+    },
+    {
+      "id": "MAN-PATH",
+      "level": "error",
+      "applies": ["asset", "composition"],
+      "runner": "validate",
+      "title": "id and version match the folder path",
+      "message": "The manifest says {measured} but the folder path is {limit}.",
+      "hint": "Set id to \"author/slug\" and version to N so they match the folder assets/author/slug/vN (or compositions/author/slug/vN)."
+    },
+    {
+      "id": "MAN-PARENT",
+      "level": "error",
+      "applies": ["asset"],
+      "runner": "validate",
+      "title": "parent names a version that exists and is not taken down",
+      "message": "parent {measured} {detail}.",
+      "hint": "Point parent at an existing, live version, written as author/slug@N, or remove the field."
+    },
+    {
+      "id": "FILE-VALID",
+      "level": "error",
+      "applies": ["asset"],
+      "runner": "validate",
+      "title": "model.glb passes the Khronos glTF Validator",
+      "message": "{file} is not a valid glTF 2.0 binary: {detail}",
+      "hint": "Export again as a binary glTF (.glb) from a current exporter, and check it with the Khronos glTF Validator. Later checks are skipped until this passes."
+    },
+    {
+      "id": "FILE-EMBEDDED",
+      "level": "error",
+      "applies": ["asset"],
+      "runner": "validate",
+      "title": "All buffers and images are embedded",
+      "message": "{file} refers to an external file: {detail}.",
+      "hint": "Export as a single .glb with all textures and buffers embedded, not as .gltf with separate files."
+    },
+    {
+      "id": "FILE-EXT",
+      "level": "error",
+      "applies": ["asset"],
+      "runner": "validate",
+      "title": "No required extensions, and only allowlisted extensions used",
+      "message": "{file} uses extensions that are not allowed: {measured}.",
+      "hint": "Turn off compression (Draco, Meshopt, KTX2, WebP) and any extension other than {limit} in the exporter, then export again."
+    },
+    {
+      "id": "SCENE-ROOT",
+      "level": "error",
+      "applies": ["asset"],
+      "runner": "validate",
+      "title": "One scene with one untransformed root node",
+      "message": "{detail}",
+      "hint": "Join everything into a single object (or parent it under one empty), apply all transforms so the root has no translation, rotation or scale, and export one scene."
+    },
+    {
+      "id": "SCENE-SCALE",
+      "level": "error",
+      "applies": ["asset"],
+      "runner": "validate",
+      "title": "No node has a scale other than 1",
+      "message": "Node \"{node}\" has scale {measured}.",
+      "hint": "Apply scale (in Blender: Object > Apply > Scale) on every object so all scales are 1, then export again. A negative scale mirrors the mesh; fix its normals after applying."
+    },
+    {
+      "id": "SCENE-STATIC",
+      "level": "error",
+      "applies": ["asset"],
+      "runner": "validate",
+      "title": "No cameras, lights, animations, skins or morph targets",
+      "message": "The model contains {measured}.",
+      "hint": "Delete cameras, lights, animations, armatures and shape keys, or turn them off in the exporter, then export again."
+    },
+    {
+      "id": "SIZE-CLASS",
+      "level": "error",
+      "applies": ["asset"],
+      "runner": "validate",
+      "title": "The longest side falls inside the declared size class",
+      "message": "The longest side is {measured} m, outside the {class} range of {limit} m.",
+      "unit": "m",
+      "hint": "If the model is the right size, change size_class in asset.json. If it is about 100 times too big or small, it was exported in centimetres: rescale to metres and apply the scale."
+    },
+    {
+      "id": "ORIGIN-Y",
+      "level": "error",
+      "applies": ["asset"],
+      "runner": "validate",
+      "title": "The lowest point is at y = 0",
+      "message": "The lowest point of the model is {measured} m {direction} the origin.",
+      "unit": "m",
+      "hint": "Move the mesh {fix} by {abs} m so its lowest point sits at y = 0, then apply the transform and export again."
+    },
+    {
+      "id": "ORIGIN-XZ",
+      "level": "error",
+      "applies": ["asset"],
+      "runner": "validate",
+      "title": "Seen from above, the origin lies inside the bounding box",
+      "message": "Seen from above, the origin is outside the model's footprint, {measured} m from its centre.",
+      "unit": "m",
+      "hint": "Move the mesh so the centre of its footprint is at x = 0, z = 0, then apply the transform and export again."
+    },
+    {
+      "id": "ORIGIN-CENTER",
+      "level": "warning",
+      "applies": ["asset"],
+      "runner": "validate",
+      "title": "The origin is near the footprint's centre",
+      "message": "The origin is {measured} m from the footprint's centre; the limit is {limit} m (25% of the footprint's width).",
+      "unit": "m",
+      "hint": "Move the mesh by ({dx}, {dz}) m in x and z so the footprint is centred on the origin, unless an off-centre origin is deliberate."
+    },
+    {
+      "id": "GEO-MODE",
+      "level": "error",
+      "applies": ["asset"],
+      "runner": "validate",
+      "title": "Every primitive is a triangle list",
+      "message": "{measured} primitive(s) are not triangle lists: {detail}.",
+      "hint": "Triangulate the mesh (in Blender: a Triangulate modifier, applied) and remove loose edges and points, then export again."
+    },
+    {
+      "id": "GEO-TRIS",
+      "level": "error",
+      "applies": ["asset"],
+      "runner": "validate",
+      "title": "The triangle count is within budget",
+      "message": "The model has {measured} triangles; the budget for size class {class} is {limit}.",
+      "unit": "triangles",
+      "hint": "Reduce the mesh by about {percent}%, or move fine surface detail into the normal map."
+    },
+    {
+      "id": "GEO-ATTRS",
+      "level": "error",
+      "applies": ["asset"],
+      "runner": "validate",
+      "title": "Every primitive has positions, normals, and UVs where textured",
+      "message": "{measured} primitive(s) are missing attributes: {detail}.",
+      "hint": "Export with normals turned on, and unwrap UVs for every textured part before exporting."
+    },
+    {
+      "id": "GEO-COLOR",
+      "level": "error",
+      "applies": ["asset"],
+      "runner": "validate",
+      "title": "No vertex colours",
+      "message": "{measured} primitive(s) have vertex colours.",
+      "hint": "Bake vertex colours into the base colour texture, then remove the colour attributes or turn off vertex colours in the exporter."
+    },
+    {
+      "id": "MAT-COUNT",
+      "level": "error",
+      "applies": ["asset"],
+      "runner": "validate",
+      "title": "The number of materials is within budget",
+      "message": "The model uses {measured} materials; the budget for size class {class} is {limit}.",
+      "unit": "materials",
+      "hint": "Merge materials that share a shader into one, using a texture atlas if needed."
+    },
+    {
+      "id": "MAT-BLEND",
+      "level": "warning",
+      "applies": ["asset"],
+      "runner": "validate",
+      "title": "Alpha mode is opaque or mask",
+      "message": "{measured} material(s) use alpha mode BLEND: {detail}.",
+      "hint": "Use OPAQUE, or MASK with a cutoff, unless the transparency must be smooth. For glass, use KHR_materials_transmission instead of blend."
+    },
+    {
+      "id": "TEX-FORMAT",
+      "level": "error",
+      "applies": ["asset"],
+      "runner": "validate",
+      "title": "Every image is PNG or JPEG",
+      "message": "{measured} image(s) are not PNG or JPEG: {detail}.",
+      "hint": "Save the textures as PNG (or JPEG for photographic colour maps) and export again with compression turned off."
+    },
+    {
+      "id": "TEX-SIZE",
+      "level": "error",
+      "applies": ["asset"],
+      "runner": "validate",
+      "title": "Image sides are powers of two and within budget",
+      "message": "Image {detail} is {measured} px; sides must be powers of two and at most {limit} px for size class {class}.",
+      "unit": "px",
+      "hint": "Resize the texture to a power of two no larger than {limit} px on each side (for example {limit}×{limit}), then export again."
+    },
+    {
+      "id": "TEX-ORM",
+      "level": "warning",
+      "applies": ["asset"],
+      "runner": "validate",
+      "title": "Occlusion and metallic-roughness share one image",
+      "message": "{measured} material(s) use separate images for occlusion and metallic-roughness.",
+      "hint": "Pack occlusion (R), roughness (G) and metallic (B) into one ORM texture and use it for both slots."
+    },
+    {
+      "id": "TEX-DENSITY",
+      "level": "info",
+      "applies": ["asset"],
+      "runner": "validate",
+      "title": "Texel density is measured",
+      "message": "Texel density is {measured} px/m.",
+      "unit": "px/m",
+      "hint": "No limit yet in 0.1; this number helps match the rest of the kit."
+    },
+    {
+      "id": "COL-CLEAN",
+      "level": "error",
+      "applies": ["asset"],
+      "runner": "validate",
+      "title": "collision.glb holds only meshes",
+      "message": "collision.glb contains {measured}.",
+      "hint": "Export the collision collection with materials, textures and extensions turned off. It must be a valid glTF binary with meshes only."
+    },
+    {
+      "id": "COL-CONVEX",
+      "level": "error",
+      "applies": ["asset"],
+      "runner": "validate",
+      "title": "At most 8 convex hulls of at most 64 vertices each",
+      "message": "{detail}",
+      "hint": "Use at most {hulls} collision meshes, each a closed convex hull of at most {vertices} vertices (in Blender: Convex Hull, then Decimate)."
+    },
+    {
+      "id": "COL-BOUNDS",
+      "level": "error",
+      "applies": ["asset"],
+      "runner": "validate",
+      "title": "Collision stays inside the model's bounding box",
+      "message": "The collision shapes extend {measured} m outside the model's bounding box; the allowance is {limit} m.",
+      "unit": "m",
+      "hint": "Keep collision shapes in the same coordinate frame as the model, with the same origin and no extra transform, and shrink any that stick out."
+    },
+    {
+      "id": "VER-NEXT",
+      "level": "error",
+      "applies": ["asset", "composition"],
+      "runner": "check-pr",
+      "title": "A new version is 1 or one higher than the latest merged version",
+      "message": "{target} adds version {measured}, but the next version must be {limit}.",
+      "hint": "Rename the folder to v{limit} and set version to {limit} in the manifest."
+    },
+    {
+      "id": "VER-FROZEN",
+      "level": "error",
+      "applies": ["asset", "composition"],
+      "runner": "check-pr",
+      "title": "No change to an already-merged version folder",
+      "message": "The pull request changes {measured}, inside a version folder that is already merged.",
+      "hint": "Merged versions never change. Put your change in a new version folder, v{next}, and leave the old one as it is."
+    },
+    {
+      "id": "PR-OWNER",
+      "level": "error",
+      "applies": ["asset", "composition"],
+      "runner": "check-pr",
+      "title": "Files are added only under the contributor's own handle",
+      "message": "The pull request by {author} adds {measured}, which is not under {author}'s own folder.",
+      "hint": "Move the work to assets/{author}/... (or compositions/{author}/...) and record the original in parent if it derives from someone else's asset."
+    },
+    {
+      "id": "PR-SIGNOFF",
+      "level": "error",
+      "applies": ["asset", "composition"],
+      "runner": "check-pr",
+      "title": "The pull request carries the sign-off statement",
+      "message": "The pull request description does not contain the sign-off statement with its box ticked.",
+      "hint": "Edit the pull request description: keep the sign-off statement from the template word for word and tick its box. A person must confirm it, not an agent."
+    },
+    {
+      "id": "CMP-SCHEMA",
+      "level": "error",
+      "applies": ["composition"],
+      "runner": "validate",
+      "title": "composition.json validates against its schema",
+      "message": "composition.json {detail}",
+      "hint": "Fix the field named in the message so composition.json matches spec/composition.schema.json."
+    },
+    {
+      "id": "CMP-REFS",
+      "level": "error",
+      "applies": ["composition"],
+      "runner": "validate",
+      "title": "Every item pins a live asset version",
+      "message": "Item {index} pins {measured}, which {detail}.",
+      "hint": "Pin an asset version that exists in assets/ and is not taken down, written as author/slug@N."
+    },
+    {
+      "id": "CMP-ROT",
+      "level": "error",
+      "applies": ["composition"],
+      "runner": "validate",
+      "title": "Every rotation is a unit quaternion",
+      "message": "Item {index} has a rotation of length {measured}; it must be 1 within {limit}.",
+      "hint": "Normalise the quaternion (divide each of x, y, z, w by its length). The order is x, y, z, w, as in glTF."
+    },
+    {
+      "id": "CMP-COUNT",
+      "level": "error",
+      "applies": ["composition"],
+      "runner": "validate",
+      "title": "Between 2 and 200 items",
+      "message": "The composition has {measured} items; it needs between {min} and {limit}.",
+      "unit": "items",
+      "hint": "A composition places at least two assets and at most 200. Split a larger scene into several compositions."
+    },
+    {
+      "id": "CMP-SCALE",
+      "level": "warning",
+      "applies": ["composition"],
+      "runner": "validate",
+      "title": "Every scale is between 0.5 and 2",
+      "message": "Item {index} has scale {measured}, outside {min} to {limit}.",
+      "hint": "Assets are already at real-world size. If you need a much bigger or smaller version, make it a new asset instead of scaling."
+    }
+  ]
+}
