@@ -464,8 +464,8 @@ if (import.meta.main) {
   console.log(
     `Built ${path.relative(process.cwd(), outDir) || "."} for base ${base}: ${index.assets.length} asset versions, ${index.compositions.length} compositions.`,
   );
-  if (failed.length) {
-    console.error(`Validation failed for: ${failed.map((f) => f.path).join(", ")}`);
-    process.exitCode = 1;
-  }
+  // Merged content that no longer passes (after a takedown or a stricter validator) is published
+  // with pass: false in index.json rather than blocking every deploy; it is listed here.
+  if (failed.length)
+    console.warn(`Not passing validation: ${failed.map((f) => f.path).join(", ")}`);
 }

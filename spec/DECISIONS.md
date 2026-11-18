@@ -165,3 +165,10 @@ build choices, not spec changes: any of them can be reversed by the maintainer.
   `tools/blender/make_test_scene.py` (unapplied scale and rotation, off-centre and floating,
   live modifiers, vertex colours, a texture, a collision hull, a camera and a light), exporting it,
   and validating the result with no edits.
+
+## Takedowns and the site
+
+- **A takedown never blocks a deploy.** The site build publishes merged content that no longer
+  passes (for example a composition pinning a taken-down asset) with `pass: false` in
+  `index.json` and lists it in the build log; `propcommons build-index` on its own still exits 1.
+  The composition viewer leaves taken-down items out and says how many.

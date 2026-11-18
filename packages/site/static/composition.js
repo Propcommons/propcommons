@@ -32,14 +32,17 @@ async function main() {
 
   const loader = new GLTFLoader();
   const models = new Map();
+  const missing = new Set();
   for (const ref of new Set(composition.items.map((i) => i.asset))) {
     const a = byRef.get(ref);
-    if (!a || a.taken_down || !a.files) throw new Error(`${ref} is not in the library`);
-    models.set(ref, (await loader.loadAsync(`${base}${a.files.model}`)).scene);
+    // A taken-down or missing asset is left out of the scene, not an error.
+    if (!a || a.taken_down || !a.files) missing.add(ref);
+    else models.set(ref, (await loader.loadAsync(`${base}${a.files.model}`)).scene);
   }
 
   const placed = [];
   for (const item of composition.items) {
+    if (missing.has(item.asset)) continue;
     const obj = models.get(item.asset).clone(true);
     obj.position.fromArray(item.position);
     obj.quaternion.fromArray(item.rotation);
@@ -50,6 +53,7 @@ async function main() {
     placed.push(obj);
   }
 
+  if (!placed.length) throw new Error("every asset in it has been taken down");
   const box = new THREE.Box3();
   for (const o of placed) box.union(boundsOf(o));
   fitStage(stage, box);
@@ -63,7 +67,8 @@ async function main() {
   draw();
 
   const size = box.getSize(new THREE.Vector3());
-  status.textContent = `${composition.items.length} items from ${models.size} assets · ${(size.x * 100).toFixed(0)} × ${(size.y * 100).toFixed(0)} × ${(size.z * 100).toFixed(0)} cm · drag to orbit, scroll to zoom`;
+  const left = composition.items.length - placed.length;
+  status.textContent = `${left ? `${left} item(s) left out because their asset was taken down · ` : ""}${placed.length} items from ${models.size} assets · ${(size.x * 100).toFixed(0)} × ${(size.y * 100).toFixed(0)} × ${(size.z * 100).toFixed(0)} cm · drag to orbit, scroll to zoom`;
   // For automated checks: each placed item's world-space bounds.
   window.compositionBounds = placed.map((o) => {
     const b = boundsOf(o);
