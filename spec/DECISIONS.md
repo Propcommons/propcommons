@@ -172,3 +172,11 @@ build choices, not spec changes: any of them can be reversed by the maintainer.
   passes (for example a composition pinning a taken-down asset) with `pass: false` in
   `index.json` and lists it in the build log; `propcommons build-index` on its own still exits 1.
   The composition viewer leaves taken-down items out and says how many.
+- **The Godot composition check is manual.** `tools/smoke/godot_composition.sh` copies the
+  assets into a throwaway Godot project, lets Godot's own importer import them (the way game
+  developers use glTF files), then loads a composition, renders it with textures and prints each
+  item's bounds. It needs a window, so it is not in CI. Last run: Godot 4.7.2 on macOS,
+  18 November 2026, fruit-bowl composition; every item's bounds matched the web viewer's.
+  Loading `.glb` files at runtime with `GLTFDocument` from a bare script returned unfinished
+  `ImporterMeshInstance3D` nodes and crashed when extracting textures, so the check uses the
+  editor's import path instead.
