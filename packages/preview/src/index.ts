@@ -1,11 +1,27 @@
 // Preview rendering: four 1024 × 1024 PNGs per asset (front three-quarter, side, top, and a "kit"
 // view beside up to two existing assets of the same size class), rendered by headless Chromium
 // from the reference scene in ../scene. Works without a GPU (SwiftShader), and is deterministic.
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { createRequire } from "node:module";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { parseArgs } from "node:util";
-import { findRepoRoot, isRealDir, parseVersionPath, UsageError } from "@propcommons/validator";
+import { NodeIO } from "@gltf-transform/core";
+import { ALL_EXTENSIONS } from "@gltf-transform/extensions";
+import {
+  findRepoRoot,
+  isRealDir,
+  parseVersionPath,
+  readGlb,
+  UsageError,
+} from "@propcommons/validator";
 import { chromium } from "playwright";
 
 const SCENE_DIR = path.join(import.meta.dirname, "..", "scene");
@@ -67,12 +83,31 @@ export function pickNeighbours(root: string, self: Manifest, max = 2): Neighbour
 }
 
 export interface PreviewResult {
-  files: Record<(typeof PREVIEW_VIEWS)[number], string> & { thumb?: string };
+  /** The four review images, plus `thumb` (a close-up of the asset alone) and, for assets that
+   *  use extensions, `fallback` (the close-up with every extension removed). */
+  files: Record<(typeof PREVIEW_VIEWS)[number], string> & { thumb?: string; fallback?: string };
   neighbours: string[];
   bounds_m: [number, number, number];
 }
 
 /** Renders the four previews of one asset version folder into outDir. */
+/** If a model uses glTF extensions, writes a copy with all of them removed and returns its path. */
+async function withoutExtensions(model: string): Promise<string | null> {
+  let used: string[] = [];
+  try {
+    used = readGlb(new Uint8Array(readFileSync(model))).json.extensionsUsed ?? [];
+  } catch {
+    return null;
+  }
+  if (!used.length) return null;
+  const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
+  const doc = await io.readBinary(new Uint8Array(readFileSync(model)));
+  for (const ext of doc.getRoot().listExtensionsUsed()) ext.dispose();
+  const out = path.join(mkdtempSync(path.join(tmpdir(), "propcommons-fallback-")), "model.glb");
+  writeFileSync(out, await io.writeBinary(doc));
+  return out;
+}
+
 export async function renderPreviews(
   folder: string,
   opts: { root?: string; outDir?: string; thumbnail?: boolean } = {},
@@ -97,8 +132,12 @@ export async function renderPreviews(
     : "small";
   const neighbours = pickNeighbours(root, manifest);
 
+  // An asset that uses extensions (the glass ones) also gets a "fallback" image: the same model
+  // with every extension removed, as an engine that ignores them would show it.
+  const fallbackModel = await withoutExtensions(model);
   const { browser, page, errors } = await openScenePage([
     ["/files/model.glb", model],
+    ...(fallbackModel ? [["/files/fallback.glb", fallbackModel] as [string, string]] : []),
     ...neighbours.map((n, i): [string, string] => [`/files/neighbour-${i}.glb`, n.model]),
   ]);
   try {
@@ -124,14 +163,25 @@ export async function renderPreviews(
       writeFileSync(file, Buffer.from(data.slice("data:image/png;base64,".length), "base64"));
       files[view] = file;
     }
-    // The site also uses a fifth, optional image: the asset alone, for gallery cards.
-    if (opts.thumbnail && typeof shots.thumb === "string") {
+    // A close-up of the asset alone (no scale cube), so small assets can be judged; the site
+    // also uses it for gallery cards.
+    if (typeof shots.thumb === "string") {
       const file = path.join(outDir, "thumb.png");
       writeFileSync(
         file,
         Buffer.from(shots.thumb.slice("data:image/png;base64,".length), "base64"),
       );
       files.thumb = file;
+    }
+    if (fallbackModel) {
+      const data = (await page.evaluate(
+        (job) =>
+          (window as unknown as { renderThumb(j: unknown): Promise<string> }).renderThumb(job),
+        { model: "/files/fallback.glb" },
+      )) as string;
+      const file = path.join(outDir, "fallback.png");
+      writeFileSync(file, Buffer.from(data.slice("data:image/png;base64,".length), "base64"));
+      files.fallback = file;
     }
     return { files, neighbours: neighbours.map((n) => n.ref), bounds_m: shots.bounds };
   } finally {
@@ -308,6 +358,7 @@ export async function renderPreviewsCli(args: string[]): Promise<number> {
   const folder = positionals[0];
   if (!folder)
     throw new UsageError("preview needs a folder, e.g. propcommons preview assets/alice/mug/v1");
+  console.error("Rendering previews (usually 10–60 seconds)…");
   const r = await renderPreviews(folder, { outDir: values.out });
   if (values.json) console.log(JSON.stringify(r, null, 2));
   else {

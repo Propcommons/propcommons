@@ -155,6 +155,30 @@ window.renderComposition = async (job) => {
   return png;
 };
 
+/**
+ * A close-up of one model alone (no scale cube), three-quarter front: job = { model }.
+ * Used for the fallback image of assets with glass extensions.
+ */
+window.renderThumb = async (job) => {
+  const canvas = document.createElement("canvas");
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  document.body.appendChild(canvas);
+  const renderer = createRenderer(canvas, {
+    width: SIZE,
+    height: SIZE,
+    preserveDrawingBuffer: true,
+  });
+  const stage = await createStage(renderer, "/scene/studio.hdr");
+  const model = await loadModel(job.model);
+  stage.scene.add(model);
+  const box = boundsOf(model);
+  fitStage(stage, box);
+  const png = snapshot(renderer, stage.scene, frameCamera(box, viewDirection("front"), 1, 1.1));
+  renderer.dispose();
+  return png;
+};
+
 /** Loads each model and returns its world-space size [x, y, z] in metres. */
 window.measureBounds = async (urls) => {
   const sizes = [];

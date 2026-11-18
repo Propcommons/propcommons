@@ -5,7 +5,9 @@
 //   propcommons preview <folder> [--out dir]
 //   propcommons check-pr --base <dir> --head <dir> --changed <file> --author <login> --body-file <file> [--json]
 //   propcommons build-index [--out index.json]
-import { readFileSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { parseArgs } from "node:util";
 import {
@@ -17,6 +19,7 @@ import {
   isPlaceholderModel,
   parseNameStatus,
   type RuleResult,
+  SIGNOFF_STATEMENT,
   type SizeClass,
   UsageError,
   type ValidationResult,
@@ -30,7 +33,10 @@ Commands:
   init <author/slug>        Create assets/<author>/<slug>/v1 from the template.
                             Options: --name, --size-class, --tags a,b, --ai-assisted, --tools a,b
   preview <folder>          Render the four preview images (see packages/preview).
-  check-pr                  Run the pull-request rules and validate the folders a pull request adds.
+  check-pr --against [branch]
+                            Check your committed work the way GitHub will, before you push.
+                            The branch defaults to upstream/main (or origin/main).
+  check-pr                  (CI) Run the pull-request rules and validate the folders it adds.
                             Options: --base <dir> --head <dir> --changed <file> --author <login>
                                      --body-file <file> [--json]
   build-index               Validate everything and write index.json. Option: --out <file>
@@ -127,6 +133,59 @@ async function cmdInit(args: string[]): Promise<number> {
   return 0;
 }
 
+const git = (root: string, args: string[], input?: Buffer) =>
+  execFileSync("git", ["-C", root, ...args], { input, maxBuffer: 1 << 30 });
+
+/**
+ * `check-pr --against <branch>`: runs the same pull-request check GitHub will, on the commits of
+ * the current branch, against the main project's branch (default: upstream/main, else
+ * origin/main). Nothing is pushed. Without --body-file the sign-off is assumed ticked, since
+ * GitHub checks it against the real pull-request description.
+ */
+async function checkAgainst(against: string, author?: string, bodyFile?: string) {
+  const root = findRepoRoot();
+  let ref = against;
+  if (!ref) {
+    const has = (r: string) => {
+      try {
+        git(root, ["rev-parse", "--verify", "--quiet", r]);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+    ref = ["upstream/main", "origin/main", "main"].find(has) ?? "main";
+  }
+  const changedText = git(root, [
+    "diff",
+    "--name-status",
+    "--no-renames",
+    `${ref}...HEAD`,
+  ]).toString();
+  const changed = parseNameStatus(changedText);
+  if (!changed.length)
+    throw new UsageError(`No committed changes compared with ${ref}. Commit your folder first.`);
+  const base = mkdtempSync(path.join(tmpdir(), "propcommons-base-"));
+  execFileSync("tar", ["-x", "-C", base], { input: git(root, ["archive", "--format=tar", ref]) });
+  const handle =
+    author ??
+    changed
+      .map((c) => c.path.split("/"))
+      .find((p) => p[0] === "assets" || p[0] === "compositions")?.[1];
+  if (!handle)
+    throw new UsageError("Couldn't tell whose handle this is; pass --author <your-handle>.");
+  let body: string;
+  if (bodyFile) body = readFileSync(bodyFile, "utf8");
+  else {
+    console.error(
+      "Note: the sign-off is assumed ticked here; on GitHub it is checked against your pull request's description.",
+    );
+    body = `- [x] ${SIGNOFF_STATEMENT}`;
+  }
+  console.error(`Checking your commits against ${ref} as ${handle}.`);
+  return checkPullRequest({ baseRoot: base, headRoot: root, changed, author: handle, body });
+}
+
 async function cmdCheckPr(args: string[]): Promise<number> {
   const { values } = parseArgs({
     args,
@@ -136,18 +195,27 @@ async function cmdCheckPr(args: string[]): Promise<number> {
       changed: { type: "string" },
       author: { type: "string" },
       "body-file": { type: "string" },
+      against: { type: "string" },
       json: { type: "boolean" },
     },
   });
-  for (const k of ["base", "head", "changed", "author", "body-file"] as const)
-    if (!values[k]) throw new UsageError(`check-pr needs --${k}.`);
-  const result = await checkPullRequest({
-    baseRoot: path.resolve(values.base as string),
-    headRoot: path.resolve(values.head as string),
-    changed: parseNameStatus(readFileSync(values.changed as string, "utf8")),
-    author: values.author as string,
-    body: readFileSync(values["body-file"] as string, "utf8"),
-  });
+  let result: Awaited<ReturnType<typeof checkPullRequest>>;
+  if (values.against !== undefined) {
+    result = await checkAgainst(values.against, values.author, values["body-file"]);
+  } else {
+    for (const k of ["base", "head", "changed", "author", "body-file"] as const)
+      if (!values[k])
+        throw new UsageError(
+          `check-pr needs --${k}, or --against <branch> to check your own work.`,
+        );
+    result = await checkPullRequest({
+      baseRoot: path.resolve(values.base as string),
+      headRoot: path.resolve(values.head as string),
+      changed: parseNameStatus(readFileSync(values.changed as string, "utf8")),
+      author: values.author as string,
+      body: readFileSync(values["body-file"] as string, "utf8"),
+    });
+  }
   if (values.json) {
     console.log(JSON.stringify(result, null, 2));
   } else {

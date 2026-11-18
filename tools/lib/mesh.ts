@@ -284,7 +284,11 @@ export function extrude(outline: P2[], y0: number, y1: number, uvScale: number):
   return { positions, normals, uvs, indices };
 }
 
-/** Outward normals check: flips the winding of any triangle whose face normal disagrees. */
+/**
+ * Makes each triangle's winding agree with its vertex normals: a triangle whose face normal points
+ * against them is flipped. It trusts the normals, so compute normals that point outward first;
+ * if they point inward, the faces end up inward too (and renderers cull them).
+ */
 export function fixWinding(m: MeshData): MeshData {
   for (let t = 0; t < m.indices.length; t += 3) {
     const [a, b, c] = [

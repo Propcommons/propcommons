@@ -255,3 +255,19 @@ build choices, not spec changes: any of them can be reversed by the maintainer.
   check has always required. The rule ID and level are unchanged.
 - **`packages/mcp/src/main.ts` is committed as executable**, so `npm ci` no longer shows it as
   changed in a fresh clone.
+
+## After the v0 gate rehearsal's contributors (18–19 November 2026)
+
+- **Every preview set includes `thumb.png`**, a close-up of the asset alone, so small assets (a
+  3 cm strawberry) can be judged. The four review images are unchanged.
+- **Assets that use extensions also get `fallback.png`**: the same close-up with every extension
+  removed, as an engine that ignores them shows it, so reviewers can judge the spec's "graceful
+  fallback" guidance.
+- **`propcommons check-pr --against <branch>`** runs GitHub's pull-request check on the current
+  branch's commits locally, with the base taken from that branch (default `upstream/main`). The
+  sign-off is assumed ticked unless `--body-file` is given.
+- **`template/model.glb` names its default scene** (`scene: 0`). The seed assets don't, and
+  can't change, because merged versions are frozen; it is only a warning in Godot.
+- **Docs** now cover glass materials and their fallback, resting objects on several contact
+  points, leaving out collision when 8 hulls can't follow a hollow shape, non-square textures,
+  credit roles for AI-made assets, and assets not on the Wanted list.

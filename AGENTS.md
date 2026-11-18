@@ -106,7 +106,7 @@ them in use. If the person wants to share the script, they publish it elsewhere 
 The same workflow, without MCP:
 
 ```bash
-npx propcommons init alice/strawberry-whole --name "Strawberry, whole" --tags food,fruit --ai-assisted --tools "Claude,glTF-Transform"
+npx propcommons init alice/strawberry-whole --name "Strawberry, whole" --size-class small --tags food,fruit --ai-assisted --tools "Claude Opus 5.5,glTF-Transform"
 ```
 
 ```bash
@@ -115,6 +115,12 @@ npx propcommons validate assets/alice/strawberry-whole/v1 --json
 
 ```bash
 npx propcommons preview assets/alice/strawberry-whole/v1
+```
+
+Before pushing, check the commits exactly as GitHub will (the sign-off is assumed ticked):
+
+```bash
+npx propcommons check-pr --against upstream/main
 ```
 
 Then follow CONTRIBUTING.md sections 6 and 7: commit only that folder on a branch, push it to the
@@ -130,6 +136,15 @@ spec; exit code 0 means pass, 1 fail, 2 could not run.
 - Triangles only, with normals; UVs wherever a material uses a texture; no vertex colours; PNG or
   JPEG textures, power-of-two sizes.
 - A long object with no obvious front (a spoon, a knife) lies along the X axis.
+- Rest it the way it would lie on a table. Moving the lowest point to y = 0 isn't enough for an
+  object that rests on two or more points (a spoon on its bowl and handle end): rotate it onto them.
+- In a generator, set the default scene (`doc.getRoot().setDefaultScene(scene)`); some importers
+  warn without it.
+- Name your AI model specifically in `tools`, e.g. `"Claude Opus 5.5"`. The person's role is
+  `directed`; `coded` is for a person who wrote the generator themselves.
+- `collision.glb` is optional. Leave it out when 8 convex hulls can't follow the shape closely (a
+  deep bowl, for example); engines can build a mesh collider from the model.
+- Textures may be non-square, as long as both sides are powers of two (1024 × 512 is fine).
 - Keep a margin from size-class edges: a model meant to be `small` should be clearly under 30 cm.
 - From Blender, `tools/blender/export_asset.py` does all of this; see CONTRIBUTING.md.
 - Budgets per size class are in `spec/budgets.json`. `get_spec` returns them.

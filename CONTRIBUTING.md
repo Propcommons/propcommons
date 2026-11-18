@@ -93,6 +93,8 @@ with Blender 5.3; older versions may work.
   **See who's on it** first.
 - Check the [library](https://propcommons.github.io/propcommons/) so you don't duplicate an asset.
   To improve an existing one, see [New versions](#new-versions-and-derived-assets) below.
+- Something not on the list is welcome too. Open a **Request an asset** issue first if you'd like
+  to let others know you're making it.
 - Keep to the spec's scope: one static, realistic object between about 1 cm and 4 m, at real-world
   size.
 
@@ -180,6 +182,18 @@ Whatever tool you use, the result must be:
   allowed are the three glass ones: `KHR_materials_transmission`, `KHR_materials_volume` and
   `KHR_materials_ior`.
 - **Static**: no cameras, lights, animation, armatures or shape keys.
+- **Resting naturally.** It should lie the way it would on a table. If it rests on two or more
+  points (a spoon on its bowl and the end of its handle), rotate it onto them; moving the lowest
+  point down isn't enough.
+
+#### Glass
+
+The three allowed extensions exist so glass can look like glass. In Blender, use the Principled
+BSDF's Transmission Weight (1 for clear glass) and IOR (about 1.5); give the glass real wall
+thickness, keep Alpha at 1 (don't use transparency or "Blend"), keep Roughness low, and set Base
+Color to the glass's tint. In an engine without glass support, that Base Color is what people
+see, so a pale tint (not pure white) still reads as a bowl or bottle. The previews include a
+`fallback.png` showing exactly that.
 
 ### Export from Blender
 
@@ -188,7 +202,8 @@ Whatever tool you use, the result must be:
    `Asset`. Select your object (or all the parts that make it up), press **M** in the 3D view and
    choose `Asset`.
 2. **Optional collision shapes:** up to 8 simple convex shapes of at most 64 vertices each, in a
-   collection named `collision`.
+   collection named `collision`. Leave them out if 8 hulls can't follow the shape closely (a deep
+   bowl, for example).
 3. **Save the .blend file.**
 4. **Run the export script from the `propcommons` folder.** On macOS, Blender's command is inside
    the app. Type the start of the command below, then drag Blender.app from Finder into the
@@ -230,7 +245,8 @@ Open `assets/yourname/wooden-spoon/v1/asset.json` in a text editor and check eve
 Credit roles: `directed` (decided what to make and guided it, including directing an AI),
 `modeled` (built the mesh), `sculpted` (sculpted high detail), `textured` (made the textures),
 `coded` (wrote a script that generates it), `scanned` (captured it with photogrammetry or a
-scanner). List every role that applies.
+scanner). List every role that applies. If an AI made it under your direction, you `directed` it; `coded`
+is for writing a generator script yourself.
 
 Leave `spec`, `id`, `version` and `license` as `init` wrote them.
 
@@ -252,9 +268,10 @@ Then render the previews a reviewer will see (needs the browser from step 2.3):
 npx propcommons preview assets/yourname/wooden-spoon/v1
 ```
 
-The four images land in `previews/yourname/wooden-spoon/v1/`: front, side and top beside a scale
-cube (10 cm for small assets, 1 m otherwise), and `kit.png` beside up to two existing assets of the
-same size class. Check the things the validator can't:
+The images land in `previews/yourname/wooden-spoon/v1/`: front, side and top beside a scale
+cube (10 cm for small assets, 1 m otherwise), `kit.png` beside up to two existing assets of the same size class, and `thumb.png`, a
+close-up of the asset alone for checking small details. If you used the glass extensions,
+`fallback.png` shows how it looks in an engine that doesn't support them. Check the things the validator can't:
 
 1. **Proportions**: is it the right size next to the cube?
 2. **Pose and facing**: does it rest the way it would on a table, front towards you?
@@ -279,6 +296,13 @@ git commit -m "Add yourname/wooden-spoon@1"
 
 ```bash
 git push -u origin add-wooden-spoon
+```
+
+Before you push, you can run the same check GitHub will on your commits (the sign-off is assumed
+ticked here; GitHub checks your real description):
+
+```bash
+npx propcommons check-pr --against upstream/main
 ```
 
 One pull request adds one or more asset or composition folders and **nothing else**. If you

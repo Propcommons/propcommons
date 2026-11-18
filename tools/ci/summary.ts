@@ -38,6 +38,6 @@ for (const f of check.folders) {
   out.push(`### ${esc(f.target)}: ${f.pass ? "pass" : "fail"}`, "", ...rows(f.results), "");
 }
 out.push(
-  "The full result JSON and the preview images are attached to this run as the `validation-results` artifact.",
+  "The full result JSON and the preview images (front, side, top, kit, a close-up, and for glass a fallback without extensions) are attached to this run as the `validation-results` artifact.",
 );
 console.log(out.join("\n"));

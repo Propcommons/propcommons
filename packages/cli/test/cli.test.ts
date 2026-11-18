@@ -150,4 +150,33 @@ describe("command line", () => {
     });
     expect(out).toContain("propcommons — tools for the Prop Commons asset library");
   });
+
+  it("check-pr --against checks your own commits before you push", () => {
+    const work = mkdtempSync(path.join(tmpdir(), "propcommons-against-"));
+    const g = (...a: string[]) =>
+      execFileSync("git", ["-c", "user.name=T", "-c", "user.email=t@example.invalid", ...a], {
+        cwd: work,
+      });
+    for (const f of ["template", "project.config.json", "MAINTAINERS"])
+      cpSync(path.join(REPO, f), path.join(work, f), { recursive: true });
+    g("init", "-q", "-b", "main");
+    g("add", "-A");
+    g("commit", "-q", "-m", "base");
+    g("checkout", "-q", "-b", "add-cup");
+    expect(cli(["init", "dana/cup", "--name", "Cup"], work).code).toBe(0);
+    g("add", "assets");
+    g("commit", "-q", "-m", "Add dana/cup@1");
+    // Still init's placeholder model: refused, as GitHub would.
+    const placeholder = cli(["check-pr", "--against", "main"], work);
+    expect(placeholder.code).toBe(1);
+    expect(placeholder.stdout).toContain("placeholder box");
+    cpSync(
+      path.join(REPO, "assets/mattashes/lemon/v1/model.glb"),
+      path.join(work, "assets/dana/cup/v1/model.glb"),
+    );
+    g("commit", "-q", "-am", "Real model");
+    const ok = cli(["check-pr", "--against", "main"], work);
+    expect(ok.code, ok.stdout + ok.stderr).toBe(0);
+    expect(ok.stdout).toContain("Pull request: PASS (assets)");
+  });
 });
