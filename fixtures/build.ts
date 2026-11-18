@@ -576,6 +576,16 @@ export async function buildFixtures(outDir = GENERATED): Promise<FixtureCase[]> 
     comp([...two, item("fixture/box@1", [0, 0, 0], [0, 0, 0, 2])]),
   );
   await addComp("CMP-COUNT", "CMP-COUNT", "fail", comp([item("fixture/box@1")]));
+  const moved = (dx: number, dy: number, dz: number) =>
+    comp(
+      two.map((i) => ({
+        ...i,
+        position: [(i.position[0] ?? 0) + dx, (i.position[1] ?? 0) + dy, (i.position[2] ?? 0) + dz],
+      })),
+    );
+  await addComp("CMP-GROUND", "CMP-GROUND", "fail", moved(0, 0.5, 0));
+  await addComp("CMP-GROUND-below", "CMP-GROUND", "fail", moved(0, -0.02, 0));
+  await addComp("CMP-CENTER", "CMP-CENTER", "fail", moved(0.3, 0, 0));
   await addComp(
     "CMP-SCALE",
     "CMP-SCALE",

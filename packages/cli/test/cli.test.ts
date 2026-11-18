@@ -121,8 +121,8 @@ describe("command line", () => {
         ai_assisted: false,
         tools: ["hand"],
         items: [
-          { asset: "alice/strawberry-whole@1", position: [0, 0, 0], rotation: [0, 0, 0, 1] },
-          { asset: "alice/strawberry-whole@1", position: [0.2, 0, 0], rotation: [0, 0, 0, 1] },
+          { asset: "alice/strawberry-whole@1", position: [-0.1, 0, 0], rotation: [0, 0, 0, 1] },
+          { asset: "alice/strawberry-whole@1", position: [0.1, 0, 0], rotation: [0, 0, 0, 1] },
         ],
       }),
     );

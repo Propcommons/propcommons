@@ -279,3 +279,26 @@ build choices, not spec changes: any of them can be reversed by the maintainer.
   that slug, until a maintainer removes them from `wanted.json`.
 - **The gate check's Blender picture uses Cycles** (64 samples, denoised), because EEVEE shows
   glTF glass as milky.
+
+## Composition frame rules (19 November 2026)
+
+The maintainer approved two new rules after the rehearsal showed a composition could float a metre
+up and still pass.
+
+- **CMP-GROUND (error):** with every item placed, the scene's lowest vertex is at y = 0 within
+  `tolerances.length_m` (1 mm), as ORIGIN-Y is for an asset.
+- **CMP-CENTER (error):** the centre of the scene's XZ footprint is within
+  `origin.centerFraction` (25%) of the footprint's longer side from the origin, the same measure as
+  ORIGIN-CENTER. It is an error here, not a warning, because a scene has no reason to be off-centre.
+- **How they measure:** each pinned asset's `model.glb` vertices (in world space within the asset),
+  placed by the item's position, rotation (normalised) and scale. Vertices, not bounding boxes, so
+  rotated items measure exactly. Each asset is read once however many items use it.
+- **When they run:** only when the composition has no other error, so every pinned asset is live
+  and the placements are well-formed. A model that can't be read (or is a link, or over the file
+  size limit) skips both rules; that asset fails its own validation anyway.
+- **This widens what the validator reads** for a composition from "does this version exist" to the
+  pinned models themselves, inside `assets/` of the same repository.
+- **Spec version stays 0.1.** No schema changes; the only existing compositions (the seed fruit
+  bowl and the rehearsal scene) pass both rules.
+- **Items floating or sinking into each other stay advice** in `propcommons preview`, not rules:
+  telling resting contact from a deliberate gap needs more than bounding boxes.

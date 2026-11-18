@@ -351,8 +351,8 @@ export async function measureInThree(models: string[]): Promise<[number, number,
 /** `propcommons preview <folder> [--out dir] [--json]` */
 export interface CompositionPreview {
   file: string;
-  /** Advice about the spec's frame (resting on y = 0, footprint centred) and items that may float
-   *  or sink. Not rules: the validator doesn't check these yet. */
+  /** Advice about the spec's frame (resting on y = 0, footprint centred, which the validator also
+   *  checks as CMP-GROUND and CMP-CENTER) and items that may float or sink (advice only). */
   notes: string[];
 }
 

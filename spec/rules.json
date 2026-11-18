@@ -339,6 +339,26 @@
       "hint": "A composition places at least two assets and at most 200. Split a larger scene into several compositions."
     },
     {
+      "id": "CMP-GROUND",
+      "level": "error",
+      "applies": ["composition"],
+      "runner": "validate",
+      "title": "The scene's lowest point is at y = 0",
+      "message": "With every item placed, the scene's lowest point is {measured} m {direction} y = 0.",
+      "unit": "m",
+      "hint": "Move every item {fix} by {abs} m (add {shift} to each item's y position) so the scene rests on y = 0."
+    },
+    {
+      "id": "CMP-CENTER",
+      "level": "error",
+      "applies": ["composition"],
+      "runner": "validate",
+      "title": "The scene's footprint is centred on the origin",
+      "message": "Seen from above, the centre of the scene's footprint is {measured} m from the origin; the limit is {limit} m (25% of the footprint's width).",
+      "unit": "m",
+      "hint": "Move every item by ({dx}, {dz}) m in x and z (add {dx} to each x position and {dz} to each z position) so the scene's footprint is centred on the origin."
+    },
+    {
       "id": "CMP-SCALE",
       "level": "warning",
       "applies": ["composition"],

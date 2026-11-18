@@ -350,7 +350,9 @@ A composition places pinned asset versions in one scene; it holds no geometry of
 `composition.json` in `compositions/yourname/<slug>/v1/`; the spec's Compositions section has a
 full example. Each item gives an `asset` (like `mattashes/apple-red@1`), a `position` in metres, a
 `rotation` as a quaternion `[x, y, z, w]`, and an optional `scale` (keep it between 0.5 and 2). The
-whole scene rests on y = 0 with its footprint centred. Validate it the same way:
+whole scene rests on y = 0 with its footprint centred: the validator places every item and checks
+both (CMP-GROUND, CMP-CENTER), and tells you how far to move everything if not. Validate it the
+same way:
 
 ```bash
 npx propcommons validate compositions/yourname/<slug>/v1
@@ -373,9 +375,9 @@ natural variation (no two strawberries are the same size).
 npx propcommons preview compositions/yourname/<slug>/v1
 ```
 
-It renders the scene to `previews/compositions/…/scene.png` and warns if the scene doesn't rest on
-y = 0, isn't centred, or has something that looks like it's floating or below the ground. The
-validator doesn't check those yet, so look at the picture too.
+It renders the scene to `previews/compositions/…/scene.png` and warns if something looks like it's
+floating or sunk into what's under it. The validator only checks the scene as a whole, not how the
+items sit on each other, so look at the picture too.
 
 **Orientation of the parts:** most assets face +Z; long objects with no front lie along X. When it
 matters which end is which, look at the asset's previews or its measured size in `index.json`.

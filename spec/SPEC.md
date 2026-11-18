@@ -252,7 +252,7 @@ A composition is a list of pinned assets with a placement for each, and it conta
 ```
 
 - **Placement:** `position` is in metres, `rotation` is a quaternion in glTF order (x, y, z, w), and `scale` is one optional number that defaults to 1.
-- **Frame:** the composition follows the same conventions as an asset: +Y up, resting on y = 0, origin at the centre of its footprint.
+- **Frame:** the composition follows the same conventions as an asset: +Y up, resting on y = 0, origin at the centre of its footprint. The validator places every item to measure this (CMP-GROUND, CMP-CENTER).
 - **Where positions come from:** a physics drop in the authoring tool or hand placement. The file stores the result, so loading it needs no physics.
 - **Flat in 0.1:** items point at assets only, never at other compositions.
 
@@ -262,6 +262,8 @@ A composition is a list of pinned assets with a placement for each, and it conta
 | CMP-REFS   | Every item pins an asset version that exists and is not taken down            | error   |
 | CMP-ROT    | Every rotation is a unit quaternion, within 0.001                             | error   |
 | CMP-COUNT  | There are between 2 and 200 items                                             | error   |
+| CMP-GROUND | With every item placed, the scene's lowest point is at y = 0, within 1 mm     | error   |
+| CMP-CENTER | The centre of the scene's footprint is within 25% of its width of the origin  | error   |
 | CMP-SCALE  | Every scale is between 0.5 and 2, since assets are already at real-world size | warning |
 
 The effective credit list of a composition is its own credits plus those of every asset it pins, and the validator writes that list to the index.

@@ -94,7 +94,7 @@ describe("MCP server", () => {
 
   it("get_spec returns rules, budgets for one class, schemas and the sign-off", async () => {
     const spec = JSON.parse(textOf(await call("get_spec", { size_class: "medium" })));
-    expect(spec.rules.length).toBe(37);
+    expect(spec.rules.length).toBe(39);
     expect(Object.keys(spec.budgets.sizeClasses)).toEqual(["medium"]);
     expect(spec.asset_schema.title).toBe("Asset manifest 0.1");
     expect(spec.signoff_statement).toMatch(/^I made this asset/);

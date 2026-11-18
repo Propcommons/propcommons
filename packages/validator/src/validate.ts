@@ -19,6 +19,7 @@ import { externalUris, readGlb } from "./glb.ts";
 import {
   boundsOf,
   checkHull,
+  footprint,
   placedPrimitives,
   round,
   size,
@@ -501,9 +502,86 @@ async function validateComposition(
         if (typeof item?.scale === "number" && (item.scale < b.minScale || item.scale > b.maxScale))
           results.push(result("CMP-SCALE", item.scale, b.maxScale, { index, min: b.minScale }));
       });
+      // CMP-GROUND and CMP-CENTER need every item placed, so they run only when the file is
+      // well-formed and every pinned asset is live and readable.
+      if (!results.some((r) => r.level === "error"))
+        results.push(...(await sceneRules(root, items)));
     }
   }
   return { spec: SPEC_VERSION, target, pass: passes(results), results, measured };
+}
+
+/** Vertex positions of a pinned asset's model, in its own frame; null if it cannot be read. */
+async function assetPoints(root: string, ref: string): Promise<Vec3[] | null> {
+  const [id, v] = ref.split("@");
+  const file = path.join(root, "assets", ...(id as string).split("/"), `v${v}`, "model.glb");
+  try {
+    const st = lstatSync(file);
+    if (!st.isFile() || st.size > BUDGETS.files.maxAnyFileBytes) return null;
+    const doc = await getIO().readBinary(new Uint8Array(readFileSync(file)));
+    return placedPrimitives(doc).flatMap((p) => p.positions);
+  } catch {
+    return null;
+  }
+}
+
+/** An item's vertices placed by its position, rotation (normalised) and scale. */
+function placeItem(item: any, points: Vec3[]): Vec3[] {
+  const [px, py, pz] = item.position as Vec3;
+  const q = item.rotation as [number, number, number, number];
+  const n = Math.hypot(...q) || 1;
+  const [x, y, z, w] = q.map((c) => c / n) as [number, number, number, number];
+  const s = typeof item.scale === "number" ? item.scale : 1;
+  // The rotation matrix of the unit quaternion (x, y, z, w), times the scale.
+  const m = [
+    [1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
+    [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
+    [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)],
+  ].map((row) => row.map((v) => v * s)) as [Vec3, Vec3, Vec3];
+  const [r0, r1, r2] = m;
+  return points.map(([a, b, c]) => [
+    r0[0] * a + r0[1] * b + r0[2] * c + px,
+    r1[0] * a + r1[1] * b + r1[2] * c + py,
+    r2[0] * a + r2[1] * b + r2[2] * c + pz,
+  ]);
+}
+
+/** CMP-GROUND and CMP-CENTER: measured from every item's vertices, placed. */
+async function sceneRules(root: string, items: any[]): Promise<RuleResult[]> {
+  const cache = new Map<string, Vec3[] | null>();
+  const placed: Vec3[] = [];
+  for (const item of items) {
+    const ref = item.asset as string;
+    if (!cache.has(ref)) cache.set(ref, await assetPoints(root, ref));
+    const points = cache.get(ref);
+    if (!points) return [];
+    for (const p of placeItem(item, points)) placed.push(p);
+  }
+  const bounds = boundsOf(placed);
+  if (!bounds) return [];
+  const out: RuleResult[] = [];
+  const TOL = BUDGETS.tolerances.length_m;
+  const low = round(bounds.min[1]);
+  if (Math.abs(low) > TOL)
+    out.push(
+      result("CMP-GROUND", Math.abs(low), TOL, {
+        direction: low > 0 ? "above" : "below",
+        fix: low > 0 ? "down" : "up",
+        abs: Math.abs(low),
+        shift: round(-low),
+      }),
+    );
+  const f = footprint(bounds);
+  const distance = Math.hypot(...f.centre);
+  const limit = BUDGETS.origin.centerFraction * f.width;
+  if (distance > limit + TOL)
+    out.push(
+      result("CMP-CENTER", round(distance, 4), round(limit, 4), {
+        dx: round(-f.centre[0], 4),
+        dz: round(-f.centre[1], 4),
+      }),
+    );
+  return out;
 }
 
 export type { Vec3 };
