@@ -1,0 +1,23 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/test-mug",
+  "version": 1,
+  "name": "Test mug (do not merge)",
+  "license": "CC0-1.0",
+  "size_class": "small",
+  "tags": [
+    "test"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "modeled"
+      ]
+    }
+  ],
+  "ai_assisted": false,
+  "tools": [
+    "Blender"
+  ]
+}
