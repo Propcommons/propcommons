@@ -30,6 +30,42 @@ function halfExtentAlong(box, dir) {
   return Math.abs(dir.x) * (size.x / 2) + Math.abs(dir.z) * (size.z / 2);
 }
 
+function isTransmissive(object) {
+  let found = false;
+  object.traverse((o) => {
+    const materials = o.isMesh ? [o.material].flat() : [];
+    if (materials.some((m) => (m?.transmission ?? 0) > 0)) found = true;
+  });
+  return found;
+}
+
+/** An upright card with dark and light stripes, standing behind a box as seen from a direction. */
+function stripedCard(box, direction) {
+  const size = box.getSize(new THREE.Vector3());
+  const centre = box.getCenter(new THREE.Vector3());
+  const span = Math.max(size.x, size.z) * 2;
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+  for (let i = 0; i < 8; i++) {
+    ctx.fillStyle = i % 2 ? "#2f3a3a" : "#e9e6dc";
+    ctx.fillRect(i * 32, 0, 32, 256);
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  const card = new THREE.Mesh(
+    new THREE.PlaneGeometry(span, span),
+    new THREE.MeshStandardMaterial({ map: texture, roughness: 1 }),
+  );
+  const back = new THREE.Vector3(-direction.x, 0, -direction.z).normalize();
+  card.position.copy(centre).addScaledVector(back, Math.max(size.x, size.z) * 0.58);
+  card.position.y = span / 2;
+  card.lookAt(centre.x, span / 2, centre.z);
+  card.receiveShadow = true;
+  return card;
+}
+
 function snapshot(renderer, scene, camera) {
   renderer.render(scene, camera);
   return renderer.domElement.toDataURL("image/png");
@@ -77,10 +113,15 @@ window.renderJob = async (job) => {
     out[name] = snapshot(renderer, scene, frameCamera(box, dir));
   }
 
-  // Thumbnail for the site's gallery: the asset alone, without the scale cube.
+  // Close-up: the asset alone, without the scale cube. See-through (transmissive) materials get a
+  // striped card behind them, because clear glass on a plain grey background looks milky.
   scene.remove(cube);
   fitStage(stage, assetBox);
-  out.thumb = snapshot(renderer, scene, frameCamera(assetBox, viewDirection("front"), 1, 1.1));
+  const thumbCamera = frameCamera(assetBox, viewDirection("front"), 1, 1.1);
+  const backdrop = isTransmissive(asset) ? stripedCard(assetBox, viewDirection("front")) : null;
+  if (backdrop) scene.add(backdrop);
+  out.thumb = snapshot(renderer, scene, thumbCamera);
+  if (backdrop) scene.remove(backdrop);
 
   // Kit view: the asset between up to two neighbours of the same size class.
   const row = [];
