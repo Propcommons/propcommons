@@ -370,13 +370,26 @@ export async function buildSite(o: SiteOptions): Promise<Index> {
   copy(MODEL_VIEWER, "vendor/model-viewer/model-viewer.min.js");
   copy(path.join(THREE_DIR, "build/three.module.js"), "vendor/three/three.module.js");
   copy(path.join(THREE_DIR, "build/three.core.js"), "vendor/three/three.core.js");
-  for (const addon of [
-    "loaders/GLTFLoader.js",
-    "loaders/HDRLoader.js",
-    "controls/OrbitControls.js",
-    "utils/BufferGeometryUtils.js",
-  ])
-    copy(path.join(THREE_DIR, "examples/jsm", addon), `vendor/three/addons/${addon}`);
+  // Three.js addons the viewers import, plus whatever those import in turn.
+  const jsm = path.join(THREE_DIR, "examples/jsm");
+  const pending = ["loaders/GLTFLoader.js", "loaders/HDRLoader.js", "controls/OrbitControls.js"];
+  const copied = new Set<string>();
+  while (pending.length) {
+    const rel = pending.pop() as string;
+    if (copied.has(rel)) continue;
+    copied.add(rel);
+    const src = path.join(jsm, rel);
+    copy(src, `vendor/three/addons/${rel}`);
+    for (const m of readFileSync(src, "utf8").matchAll(
+      /(?:import|export)\s[^;]*?from\s*['"](\.{1,2}\/[^'"]+)['"]/g,
+    )) {
+      const dep = path
+        .relative(jsm, path.resolve(path.dirname(src), m[1] as string))
+        .split(path.sep)
+        .join("/");
+      if (!dep.startsWith("..")) pending.push(dep);
+    }
+  }
   copy(path.join(THREE_DIR, "LICENSE"), "vendor/three/LICENSE");
   writeFileSync(path.join(o.outDir, ".nojekyll"), "");
 

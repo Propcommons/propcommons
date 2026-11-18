@@ -1,0 +1,29 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/cutting-board",
+  "version": 1,
+  "name": "Cutting board, wooden",
+  "license": "CC0-1.0",
+  "size_class": "medium",
+  "tags": [
+    "kitchen",
+    "wood",
+    "board"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "directed",
+        "coded"
+      ]
+    }
+  ],
+  "ai_assisted": true,
+  "tools": [
+    "tools/seed/build.ts",
+    "glTF-Transform",
+    "Claude"
+  ],
+  "source_url": "https://github.com/propcommons/propcommons/blob/main/tools/seed/build.ts"
+}

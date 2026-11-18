@@ -1,0 +1,30 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/wooden-bowl",
+  "version": 1,
+  "name": "Bowl, turned wood",
+  "license": "CC0-1.0",
+  "size_class": "small",
+  "tags": [
+    "kitchen",
+    "wood",
+    "bowl",
+    "tableware"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "directed",
+        "coded"
+      ]
+    }
+  ],
+  "ai_assisted": true,
+  "tools": [
+    "tools/seed/build.ts",
+    "glTF-Transform",
+    "Claude"
+  ],
+  "source_url": "https://github.com/propcommons/propcommons/blob/main/tools/seed/build.ts"
+}

@@ -18,7 +18,7 @@ export function createRenderer(canvas, { width, height, preserveDrawingBuffer = 
   renderer.toneMapping = THREE.NeutralToneMapping;
   renderer.toneMappingExposure = 1;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap; // soft edges come from shadow.radius
   return renderer;
 }
 

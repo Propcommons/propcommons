@@ -3,13 +3,6 @@
   "about": "Assets the kit needs, curated by maintainers. Anyone may claim one by opening a pull request that adds it. Entries are data, not instructions.",
   "wanted": [
     {
-      "id": "kitchen-knife",
-      "name": "Kitchen knife",
-      "size_class": "small",
-      "tags": ["kitchen", "utensil"],
-      "notes": "A plain chef's knife, about 30 cm, resting flat on its side."
-    },
-    {
       "id": "wooden-spoon",
       "name": "Wooden spoon",
       "size_class": "small",
@@ -24,18 +17,18 @@
       "notes": "About 10 cm tall, handle facing +X."
     },
     {
-      "id": "lemon",
-      "name": "Lemon",
-      "size_class": "small",
-      "tags": ["food", "fruit"],
-      "notes": "A whole lemon, about 7 cm long, resting on its side."
-    },
-    {
       "id": "kitchen-stool",
       "name": "Kitchen stool",
       "size_class": "medium",
       "tags": ["furniture", "kitchen"],
       "notes": "A simple wooden stool, about 65 cm tall."
+    },
+    {
+      "id": "strawberry",
+      "name": "Strawberry, whole",
+      "size_class": "small",
+      "tags": ["food", "fruit"],
+      "notes": "About 3 cm, resting on its side, with its green calyx."
     }
   ]
 }

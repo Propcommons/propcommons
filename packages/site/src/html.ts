@@ -75,7 +75,9 @@ export function page(o: PageOptions): string {
   // Scripts: only same-origin files, plus the exact import map by hash. No inline code.
   const csp = [
     "default-src 'self'",
-    `script-src 'self'${importMap ? ` 'sha256-${sha256Base64(importMap)}'` : ""}`,
+    // model-viewer compiles a WebAssembly module; 'wasm-unsafe-eval' allows that and nothing else
+    // (JavaScript eval stays blocked). Only asset pages load model-viewer.
+    `script-src 'self'${importMap ? ` 'sha256-${sha256Base64(importMap)}'` : ""}${o.modelViewer ? " 'wasm-unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob:",
     "connect-src 'self' data: blob:",
@@ -95,6 +97,7 @@ ${render(html`<html lang="en">
 <meta name="referrer" content="no-referrer">
 <title>${o.title}</title>
 ${o.description ? html`<meta name="description" content="${o.description}">` : ""}
+<link rel="icon" href="data:,">
 <link rel="stylesheet" href="${o.base}static/style.css">
 ${importMap ? raw(`<script type="importmap">${importMap}</script>`) : ""}
 ${o.modelViewer ? html`<script type="module" src="${o.base}vendor/model-viewer/model-viewer.min.js"></script>` : ""}

@@ -6,7 +6,8 @@
     "useIgnoreFile": true
   },
   "files": {
-    "ignoreUnknown": false
+    "ignoreUnknown": false,
+    "includes": ["**", "!assets", "!compositions", "!site-dist", "!previews", "!fixtures/generated"]
   },
   "formatter": {
     "enabled": true,
