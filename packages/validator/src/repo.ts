@@ -4,6 +4,7 @@
 import {
   copyFileSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   readdirSync,
   readFileSync,
@@ -128,6 +129,24 @@ export interface PullRequestInput {
   body: string;
 }
 
+/** Changed paths (or any folder above them) that are symbolic links in the head checkout. */
+function symlinksIn(headRoot: string, changed: ChangedFile[]): string[] {
+  const found = new Set<string>();
+  for (const c of changed) {
+    if (c.status === "deleted") continue;
+    const parts = c.path.split("/");
+    for (let i = 1; i <= parts.length; i++) {
+      const rel = parts.slice(0, i).join("/");
+      try {
+        if (lstatSync(path.join(headRoot, rel)).isSymbolicLink()) found.add(rel);
+      } catch {
+        break;
+      }
+    }
+  }
+  return [...found].sort();
+}
+
 export async function checkPullRequest(input: PullRequestInput): Promise<PullRequestCheck> {
   const pr = checkPr({
     author: input.author,
@@ -137,7 +156,10 @@ export async function checkPullRequest(input: PullRequestInput): Promise<PullReq
     maintainers: readMaintainers(input.baseRoot),
   });
   let problem: string | null = null;
-  if (pr.kind === "mixed")
+  const links = symlinksIn(input.headRoot, input.changed);
+  if (links.length)
+    problem = `Symbolic links are not allowed in pull requests: ${links.join(", ")}. Replace them with the real files.`;
+  else if (pr.kind === "mixed")
     problem =
       "This pull request changes assets and other files together. Please split it: one pull request that only adds asset or composition folders, and another for everything else.";
   else if (pr.kind === "code")
@@ -151,7 +173,7 @@ export async function checkPullRequest(input: PullRequestInput): Promise<PullReq
   }
   return {
     spec: SPEC_VERSION,
-    pass: pr.kind === "assets" && pr.pass && folders.every((f) => f.pass),
+    pass: !links.length && pr.kind === "assets" && pr.pass && folders.every((f) => f.pass),
     kind: pr.kind,
     problem,
     pr,

@@ -1,0 +1,75 @@
+# Checks a pull request that adds assets or compositions.
+#
+# Security (see the CI and security rules in the implementation brief):
+# - Runs on pull_request, never pull_request_target: no secrets, and a read-only token.
+# - The validator is checked out and built from the BASE branch. The pull request's head is
+#   checked out into a separate folder and only read as data; nothing from it is executed.
+# - Results go to the job summary and an uploaded artifact. No bot comments (that needs write).
+name: Asset pull request
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+    paths:
+      - "assets/**"
+      - "compositions/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: assets-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate assets
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out the base branch (trusted validator)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: base/.node-version
+          package-manager-cache: false
+
+      - name: Install the validator from the base branch
+        working-directory: base
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Check out the pull request as data
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: head
+          persist-credentials: false
+          fetch-depth: 0
+          lfs: false
+          submodules: false
+
+      - name: Run the checks
+        env:
+          BASE_DIR: ${{ github.workspace }}/base
+          HEAD_DIR: ${{ github.workspace }}/head
+          OUT_DIR: ${{ github.workspace }}/out
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: bash base/tools/ci/assets-pr.sh
+
+      - name: Upload results and previews
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: validation-results
+          path: out/
+          if-no-files-found: ignore
+          retention-days: 14

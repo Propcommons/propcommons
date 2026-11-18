@@ -1,0 +1,26 @@
+name: Report a problem
+description: An asset that breaks a rule or the content policy, a bug in the tools, or a takedown request.
+labels: ["problem"]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of problem?
+      options:
+        - An asset or composition (looks wrong, wrong scale, fails in an engine)
+        - Content policy (brand, logo, likeness, someone else's work)
+        - The tools (validator, command line, MCP server, site)
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Which asset, page or command?
+      placeholder: alice/strawberry-whole@1
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: What you expected and what happened. For security problems, follow SECURITY.md instead.
+    validations:
+      required: true

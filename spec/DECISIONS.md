@@ -82,3 +82,18 @@ build choices, not spec changes: any of them can be reversed by the maintainer.
 - **PR-SIGNOFF** looks for a ticked checkbox line (`- [x] ...`) whose text is the statement from the
   spec, ignoring differences in spaces and line breaks. The statement lives in `spec/rules.json`
   as `signoffStatement`. Code-only pull requests don't need it.
+
+## CI
+
+- **The assets workflow's logic lives in `tools/ci/assets-pr.sh`**, run from the base checkout, so
+  the same steps can be tested locally (`test/ci.test.ts` simulates a fork pull request with real
+  git repositories, including one that edits the validator to always pass).
+- **The changed-file list comes from git** (`git diff --name-status` between the base commit and
+  the head), not from the GitHub API, so the job needs no token beyond read-only checkout.
+- **Mixed pull requests** trigger both workflows: assets-pr fails with a message asking for a split,
+  and code CI runs the tests. A code-only pull request does not trigger assets-pr.
+- **Code CI runs a code pull request's own tests.** That is unavoidable for code review; the job
+  has no secrets and a read-only token. GitHub's "Require approval for all outside collaborators"
+  setting should be on so a maintainer approves each run from a new contributor.
+- **assets-pr also runs when the description is edited**, so ticking the sign-off box re-runs it.
+- **Symbolic links anywhere in a pull request fail the asset check.** They are never followed.

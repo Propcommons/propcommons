@@ -1,0 +1,27 @@
+name: Request an asset
+description: Suggest an asset the kit needs. Maintainers add accepted requests to wanted.json.
+labels: ["wanted"]
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Asset name
+      description: What the object is, in plain English.
+      placeholder: Wooden spoon
+    validations:
+      required: true
+  - type: dropdown
+    id: size_class
+    attributes:
+      label: Size class
+      options:
+        - small (1 cm to 30 cm)
+        - medium (30 cm to 1.2 m)
+        - large (1.2 m to 4 m)
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: What it would be used with, and any details that matter. No real brands or logos.
