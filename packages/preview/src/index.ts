@@ -349,6 +349,101 @@ export async function measureInThree(models: string[]): Promise<[number, number,
 }
 
 /** `propcommons preview <folder> [--out dir] [--json]` */
+export interface CompositionPreview {
+  file: string;
+  /** Advice about the spec's frame (resting on y = 0, footprint centred) and items that may float
+   *  or sink. Not rules: the validator doesn't check these yet. */
+  notes: string[];
+}
+
+/**
+ * Renders a composition from the assets in the repository, and checks the parts of the spec's
+ * Compositions "Frame" that need geometry: the scene rests on y = 0 and its footprint is centred.
+ * It also flags items that look like they float (nothing under them) or go below the ground.
+ */
+export async function previewComposition(
+  folder: string,
+  opts: { root?: string; outDir?: string } = {},
+): Promise<CompositionPreview> {
+  const dir = path.resolve(folder);
+  const vp = parseVersionPath(dir);
+  const root = path.resolve(opts.root ?? vp?.root ?? findRepoRoot(dir));
+  let comp: { items?: { asset: string; position: number[]; rotation: number[]; scale?: number }[] };
+  try {
+    comp = JSON.parse(readFileSync(path.join(dir, "composition.json"), "utf8"));
+  } catch {
+    throw new UsageError(`${folder} has no readable composition.json.`);
+  }
+  const items = comp.items ?? [];
+  const modelOf = (ref: string) => {
+    const [id, v] = ref.split("@");
+    return path.join(root, "assets", id as string, `v${v}`, "model.glb");
+  };
+  const missing = items.filter((i) => !existsSync(modelOf(i.asset))).map((i) => i.asset);
+  if (missing.length)
+    throw new UsageError(
+      `These assets aren't in this repository: ${[...new Set(missing)].join(", ")}.`,
+    );
+  const outDir = path.resolve(
+    opts.outDir ??
+      path.join(
+        root,
+        "previews",
+        "compositions",
+        vp ? `${vp.author}/${vp.slug}/v${vp.version}` : path.basename(dir),
+      ),
+  );
+  const { file, items: bounds } = await loadCompositionInThree(
+    items.map((i) => ({
+      model: modelOf(i.asset),
+      position: i.position,
+      rotation: i.rotation,
+      scale: i.scale,
+    })),
+    path.join(outDir, "scene.png"),
+  );
+  const notes: string[] = [];
+  const mm = (m: number) => `${(m * 1000).toFixed(1)} mm`;
+  const tol = 0.001;
+  const lowest = Math.min(...bounds.map((b) => b.min[1] as number));
+  if (Math.abs(lowest) > tol)
+    notes.push(
+      `The scene's lowest point is ${mm(lowest)} from y = 0; move everything so it rests on y = 0.`,
+    );
+  const lo = [0, 2].map((a) => Math.min(...bounds.map((b) => b.min[a] as number)));
+  const hi = [0, 2].map((a) => Math.max(...bounds.map((b) => b.max[a] as number)));
+  const centre = [
+    ((lo[0] as number) + (hi[0] as number)) / 2,
+    ((lo[1] as number) + (hi[1] as number)) / 2,
+  ];
+  if (Math.hypot(centre[0] as number, centre[1] as number) > tol)
+    notes.push(
+      `The scene's footprint is centred at x = ${mm(centre[0] as number)}, z = ${mm(centre[1] as number)}; move everything so it is centred on the origin.`,
+    );
+  bounds.forEach((b, i) => {
+    const label = `Item ${i + 1} (${items[i]?.asset})`;
+    const bottom = b.min[1] as number;
+    if (bottom < -tol) notes.push(`${label} goes ${mm(-bottom)} below the ground.`);
+    if (bottom <= tol) return;
+    // Something must be under it: another item whose box overlaps it from above.
+    const supported = bounds.some(
+      (o, j) =>
+        j !== i &&
+        (o.max[1] as number) >= bottom - tol &&
+        (o.min[1] as number) < bottom &&
+        (o.min[0] as number) < (b.max[0] as number) &&
+        (o.max[0] as number) > (b.min[0] as number) &&
+        (o.min[2] as number) < (b.max[2] as number) &&
+        (o.max[2] as number) > (b.min[2] as number),
+    );
+    if (!supported)
+      notes.push(
+        `${label} may be floating: nothing is under it, and its lowest point is ${mm(bottom)} above the ground.`,
+      );
+  });
+  return { file, notes };
+}
+
 export async function renderPreviewsCli(args: string[]): Promise<number> {
   const { values, positionals } = parseArgs({
     args,
@@ -357,7 +452,24 @@ export async function renderPreviewsCli(args: string[]): Promise<number> {
   });
   const folder = positionals[0];
   if (!folder)
-    throw new UsageError("preview needs a folder, e.g. propcommons preview assets/alice/mug/v1");
+    throw new UsageError(
+      "preview needs an asset or composition folder, e.g. propcommons preview assets/alice/mug/v1",
+    );
+  if (existsSync(path.join(folder, "composition.json"))) {
+    console.error("Rendering the composition (usually 10–60 seconds)…");
+    const c = await previewComposition(folder, { outDir: values.out });
+    if (values.json) console.log(JSON.stringify(c, null, 2));
+    else {
+      console.log(`scene  ${path.relative(process.cwd(), c.file)}`);
+      if (c.notes.length) for (const n of c.notes) console.log(`  note  ${n}`);
+      else
+        console.log(
+          "  Rests on y = 0, footprint centred, nothing obviously floating or below the ground.",
+        );
+      console.log("  These checks look at bounding boxes only; look at the picture too.");
+    }
+    return 0;
+  }
   console.error("Rendering previews (usually 10–60 seconds)…");
   const r = await renderPreviews(folder, { outDir: values.out });
   if (values.json) console.log(JSON.stringify(r, null, 2));

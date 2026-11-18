@@ -271,3 +271,11 @@ build choices, not spec changes: any of them can be reversed by the maintainer.
 - **Docs** now cover glass materials and their fallback, resting objects on several contact
   points, leaving out collision when 8 hulls can't follow a hollow shape, non-square textures,
   credit roles for AI-made assets, and assets not on the Wanted list.
+- **`propcommons preview` accepts a composition folder.** It renders the scene and gives advice,
+  not rule results, on the spec's composition frame (rests on y = 0, footprint centred) and on
+  items that look like they float or go below the ground, using bounding boxes. Turning these
+  into rules is a spec change, proposed for the maintainer to decide.
+- **Wanted entries hide themselves** on the site and in `search_assets` once any live asset uses
+  that slug, until a maintainer removes them from `wanted.json`.
+- **The gate check's Blender picture uses Cycles** (64 samples, denoised), because EEVEE shows
+  glTF glass as milky.

@@ -648,6 +648,13 @@ export async function buildSite(o: SiteOptions): Promise<Index> {
   const wanted = existsSync(wantedFile)
     ? JSON.parse(readFileSync(wantedFile, "utf8"))
     : { wanted: [] };
+  // An entry is done once any author has a live asset with that slug: hide it until a maintainer
+  // removes it from wanted.json.
+  const madeSlugs = new Set(
+    index.assets.filter((a) => !a.taken_down).map((a) => a.id.split("/")[1]),
+  );
+  if (Array.isArray(wanted.wanted))
+    wanted.wanted = wanted.wanted.filter((w: { id?: string }) => !madeSlugs.has(w.id ?? ""));
   copy(wantedFile, "wanted.json");
 
   for (const a of index.assets) {

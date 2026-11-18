@@ -358,6 +358,28 @@ npx propcommons validate compositions/yourname/<slug>/v1
 
 See `compositions/mattashes/fruit-bowl/v1/composition.json` for a working one.
 
+**Placing things so they rest.** An asset's origin is the centre of its footprint at ground level,
+so an item standing on a surface at height `h` gets `position[1] = h`. For things in a bowl or a
+heap, either lower each item until it first touches what's below it (measure the models' vertices),
+or run a physics drop in Blender and copy the settled positions and rotations. For a drop: use the
+models' real shapes for hollow things (a bowl), give the falling items their own pivot at their
+centre (an asset's origin is at its base, not its centre of mass), and expect small objects to need
+a smaller collision margin than Blender's default. A `scale` between about 0.85 and 1.1 is fine for
+natural variation (no two strawberries are the same size).
+
+**Check it before you push:**
+
+```bash
+npx propcommons preview compositions/yourname/<slug>/v1
+```
+
+It renders the scene to `previews/compositions/…/scene.png` and warns if the scene doesn't rest on
+y = 0, isn't centred, or has something that looks like it's floating or below the ground. The
+validator doesn't check those yet, so look at the picture too.
+
+**Orientation of the parts:** most assets face +Z; long objects with no front lie along X. When it
+matters which end is which, look at the asset's previews or its measured size in `index.json`.
+
 ## Rules that can't be broken
 
 - CC0 1.0 only, and the sign-off is confirmed by a person.

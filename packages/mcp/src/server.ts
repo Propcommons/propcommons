@@ -278,7 +278,11 @@ export function createServer(o: ServerOptions): McpServer {
           return [];
         }
       })();
+      const madeSlugs = new Set(
+        index.assets.filter((a) => !a.taken_down).map((a) => a.id.split("/")[1]),
+      );
       const wanted = wantedAll
+        .filter((w) => !madeSlugs.has(w.id))
         .filter((w) => !size_class || w.size_class === size_class)
         .filter((w) => !tag || w.tags?.includes(tag))
         .filter((w) => matches([w.id ?? "", w.name ?? "", ...(w.tags ?? [])]));

@@ -166,3 +166,6 @@ npm run site:serve  # serve site-dist/ at http://127.0.0.1:8080/propcommons/
 - TypeScript runs directly on Node (no build step), so use only erasable syntax: no enums,
   namespaces or parameter properties, and import local files with their `.ts` extension.
 - Record any ambiguity you resolve in `spec/DECISIONS.md`.
+- **The v0 gate check**: `node tools/smoke/gate_check.ts --library <repo> --composition <folder> --out <dir>`
+  loads a composition in Three.js, Godot and Blender, compares every item's placement across the
+  three (within 1 mm) and saves a picture from each. It needs Godot and Blender installed.
