@@ -1,0 +1,12 @@
+{
+  "spec": "0.1",
+  "id": "your-handle/your-asset",
+  "version": 1,
+  "name": "Your asset",
+  "license": "CC0-1.0",
+  "size_class": "small",
+  "tags": ["prop"],
+  "credits": [{ "github": "your-handle", "roles": ["modeled"] }],
+  "ai_assisted": false,
+  "tools": ["Blender"]
+}

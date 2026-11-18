@@ -37,7 +37,6 @@ export interface CompositionMeasured {
 export interface ValidationResult {
   spec: string;
   target: string;
-  kind: "asset" | "composition" | "tombstone";
   pass: boolean;
   results: RuleResult[];
   measured: AssetMeasured | CompositionMeasured | Record<string, never>;

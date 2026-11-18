@@ -96,7 +96,7 @@ describe("fixtures", () => {
 
   it("a takedown folder passes and is skipped", () => {
     const r = results.get("tombstone");
-    expect(r).toMatchObject({ pass: true, kind: "tombstone", results: [] });
+    expect(r).toMatchObject({ pass: true, results: [], measured: {} });
   });
 
   it("an oversized file is rejected unread", () => {
@@ -107,7 +107,7 @@ describe("fixtures", () => {
 
   it("results follow the spec's output format", () => {
     const r = results.get("GEO-TRIS") as ValidationResult;
-    expect(Object.keys(r)).toEqual(["spec", "target", "kind", "pass", "results", "measured"]);
+    expect(Object.keys(r)).toEqual(["spec", "target", "pass", "results", "measured"]);
     expect(r.target).toBe("assets/fixture/box/v1");
     const tris = r.results.find((x) => x.rule === "GEO-TRIS");
     expect(tris).toEqual({

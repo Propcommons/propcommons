@@ -2,6 +2,7 @@
 export * from "./glb.ts";
 export * from "./measure.ts";
 export * from "./paths.ts";
+export * from "./repo.ts";
 export * from "./result.ts";
 export * from "./rules/pr.ts";
 export * from "./schemas.ts";

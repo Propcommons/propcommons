@@ -30,8 +30,9 @@ build choices, not spec changes: any of them can be reversed by the maintainer.
   is `null`.
 - **`measured` when the model can't be read.** It is always present. Values that could not be
   measured (for example after FILE-VALID fails) are `null`, and `textures` is empty.
-- **The result also carries `kind`** (`asset`, `composition` or `tombstone`) so a reader knows which
-  `measured` shape to expect. A composition's `measured` is `{ items, file_bytes, sha256 }`.
+- **A composition's `measured`** is `{ items, file_bytes, sha256 }`, and a takedown's is `{}`.
+- **The result's shape is pinned by `spec/result.schema.json`**, which the tests check the command
+  line's `--json` output against.
 - **FILE-SIZE runs twice.** Before anything is parsed, `asset.json` and `composition.json` must be at
   most 64 KB and any `.glb` at most 10 MB (the largest class budget); larger files are rejected
   unread. Once the manifest gives the size class, `model.glb` and `collision.glb` are each checked

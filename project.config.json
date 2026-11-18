@@ -4,7 +4,7 @@
   "github": {
     "owner": "propcommons",
     "repo": "propcommons",
-    "maintainers": ["mattashes"]
+    "maintainersFile": "MAINTAINERS"
   },
   "site": {
     "url": "https://propcommons.github.io/propcommons/",

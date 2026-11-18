@@ -214,7 +214,7 @@ export async function validateFolder(
     listing.files.has("tombstone.json") &&
     !listing.unexpected.length
   ) {
-    return { spec: SPEC_VERSION, target, kind: "tombstone", pass: true, results: [], measured: {} };
+    return { spec: SPEC_VERSION, target, pass: true, results: [], measured: {} };
   }
 
   const isComposition =
@@ -358,7 +358,7 @@ async function validateAsset(
     results.push(...(await collisionRules(path.join(dir, "collision.glb"), modelBounds)));
   }
 
-  return { spec: SPEC_VERSION, target, kind: "asset", pass: passes(results), results, measured };
+  return { spec: SPEC_VERSION, target, pass: passes(results), results, measured };
 }
 
 async function collisionRules(
@@ -503,14 +503,7 @@ async function validateComposition(
       });
     }
   }
-  return {
-    spec: SPEC_VERSION,
-    target,
-    kind: "composition",
-    pass: passes(results),
-    results,
-    measured,
-  };
+  return { spec: SPEC_VERSION, target, pass: passes(results), results, measured };
 }
 
 export type { Vec3 };

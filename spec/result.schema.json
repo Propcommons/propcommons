@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/spec/0.1/result.schema.json",
+  "title": "Validator result 0.1",
+  "description": "The one JSON result the validator returns per folder. The command line (--json), the MCP validate tool and CI all return exactly this.",
+  "type": "object",
+  "required": ["spec", "target", "pass", "results", "measured"],
+  "additionalProperties": false,
+  "properties": {
+    "spec": { "const": "0.1" },
+    "target": { "type": "string" },
+    "pass": { "type": "boolean" },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["rule", "level", "message", "measured", "limit", "unit", "hint"],
+        "additionalProperties": false,
+        "properties": {
+          "rule": { "type": "string", "pattern": "^[A-Z]+-[A-Z]+$" },
+          "level": { "enum": ["error", "warning", "info"] },
+          "message": { "type": "string", "minLength": 1 },
+          "measured": {},
+          "limit": {},
+          "unit": { "type": ["string", "null"] },
+          "hint": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "measured": {
+      "oneOf": [
+        { "$ref": "#/$defs/assetMeasured" },
+        { "$ref": "#/$defs/compositionMeasured" },
+        { "type": "object", "maxProperties": 0 }
+      ]
+    }
+  },
+  "$defs": {
+    "assetMeasured": {
+      "type": "object",
+      "required": [
+        "bounds_m",
+        "triangles",
+        "materials",
+        "textures",
+        "texel_density_px_per_m",
+        "file_bytes",
+        "sha256"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "bounds_m": {
+          "oneOf": [
+            { "type": "array", "items": { "type": "number" }, "minItems": 3, "maxItems": 3 },
+            { "type": "null" }
+          ]
+        },
+        "triangles": { "type": ["integer", "null"] },
+        "materials": { "type": ["integer", "null"] },
+        "textures": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["slot", "width", "height", "format"],
+            "additionalProperties": false,
+            "properties": {
+              "slot": { "type": "string" },
+              "width": { "type": ["integer", "null"] },
+              "height": { "type": ["integer", "null"] },
+              "format": { "enum": ["png", "jpeg", "unknown"] }
+            }
+          }
+        },
+        "texel_density_px_per_m": { "type": ["number", "null"] },
+        "file_bytes": { "type": ["integer", "null"] },
+        "sha256": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "compositionMeasured": {
+      "type": "object",
+      "required": ["items", "file_bytes", "sha256"],
+      "additionalProperties": false,
+      "properties": {
+        "items": { "type": ["integer", "null"] },
+        "file_bytes": { "type": ["integer", "null"] },
+        "sha256": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" }
+      }
+    }
+  }
+}
