@@ -19,6 +19,7 @@ const folders = readdirSync(path.join(REPO, "assets/mattashes")).map((s) =>
 );
 const models = folders.map((f) => path.join(f, "model.glb"));
 const expected: [number, number, number][] = [];
+const measuredAll: AssetMeasured[] = [];
 const blender = findBlender();
 /** Engines may write files next to what they import, so they only ever see copies. */
 const scratch = mkdtempSync(path.join(tmpdir(), "propcommons-smoke-"));
@@ -30,10 +31,11 @@ const copies = models.map((m, i) => {
 const godot = findGodot();
 
 beforeAll(async () => {
-  for (const f of folders)
-    expected.push((await validateFolder(f, { root: REPO })).measured as AssetMeasured as never);
-  for (let i = 0; i < expected.length; i++)
-    expected[i] = (expected[i] as unknown as AssetMeasured).bounds_m as [number, number, number];
+  for (const f of folders) {
+    const measured = (await validateFolder(f, { root: REPO })).measured as AssetMeasured;
+    measuredAll.push(measured);
+    expected.push(measured.bounds_m as [number, number, number]);
+  }
 });
 
 function expectSameBounds(engine: string, got: number[][]) {
@@ -86,4 +88,46 @@ describe("import smoke tests", () => {
     expect(r.status, `${r.stdout}\n${r.stderr}`).toBe(0);
     expectSameBounds("Godot", parseBounds(r.stdout));
   });
+
+  for (const mode of ["check", "check-editor"] as const) {
+    it.skipIf(!godot)(
+      `Godot loads every seed asset at runtime with prop_commons.gd (${mode})`,
+      async () => {
+        const r = spawnSync(
+          "bash",
+          [path.join(REPO, "tools/smoke/godot_runtime.sh"), mode, ...copies],
+          {
+            encoding: "utf8",
+            cwd: scratch,
+            env: { ...process.env, GODOT: godot as string },
+          },
+        );
+        expect(r.status, `${r.stdout}\n${r.stderr}`).toBe(0);
+        const line = r.stdout.split("\n").find((l) => l.startsWith("RUNTIME_JSON "));
+        const reports = JSON.parse((line ?? "").slice("RUNTIME_JSON ".length)) as {
+          editor_hint: boolean;
+          importer_meshes: number;
+          mesh_instances: number;
+          missing_materials: number;
+          textures: [number, number][];
+          size: number[];
+        }[];
+        expectSameBounds(
+          `Godot runtime (${mode})`,
+          reports.map((x) => x.size),
+        );
+        for (const [i, rep] of reports.entries()) {
+          const measured = measuredAll[i] as AssetMeasured;
+          expect(rep.editor_hint, "mode").toBe(mode === "check-editor");
+          expect(rep.importer_meshes, "every mesh is renderable").toBe(0);
+          expect(rep.mesh_instances).toBeGreaterThan(0);
+          expect(rep.missing_materials).toBe(0);
+          // Every texture Godot loaded has the size the validator measured.
+          const sizes = measured.textures.map((t) => `${t.width}x${t.height}`);
+          expect(rep.textures.length).toBeGreaterThan(0);
+          for (const [w, h] of rep.textures) expect(sizes).toContain(`${w}x${h}`);
+        }
+      },
+    );
+  }
 });

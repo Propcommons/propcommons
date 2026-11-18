@@ -18,6 +18,11 @@ by the same validator.
   `assets/<author>/<slug>/v<N>/model.glb`.
 - **Pin a version.** IDs look like `alice/strawberry-whole@3`. A published version never changes;
   improvements become a new version.
+- **In Godot 4:** drop a `model.glb` into your project and Godot's importer handles it. To load
+  assets or whole compositions while a game is running (for example from a downloaded copy of the
+  library), copy [`tools/godot/prop_commons.gd`](tools/godot/prop_commons.gd) into your project and
+  call `PropCommons.load_asset_file(path)` or `PropCommons.load_composition_file(json, library)`.
+  Tested with Godot 4.7.2.
 - **For tools and agents:** [`index.json`](https://propcommons.github.io/propcommons/index.json)
   lists every asset with its measured size, triangle count, textures, credits and file paths. Its
   shape is documented in [`spec/INDEX.md`](spec/INDEX.md). [`llms.txt`](https://propcommons.github.io/propcommons/llms.txt)

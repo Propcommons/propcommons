@@ -180,3 +180,11 @@ build choices, not spec changes: any of them can be reversed by the maintainer.
   Loading `.glb` files at runtime with `GLTFDocument` from a bare script returned unfinished
   `ImporterMeshInstance3D` nodes and crashed when extracting textures, so the check uses the
   editor's import path instead.
+- **Runtime loading in Godot uses `tools/godot/prop_commons.gd`.** It loads `.glb` files with
+  `GLTFDocument`, keeps textures in memory (`HANDLE_BINARY_EMBED_AS_UNCOMPRESSED`; the default
+  extraction only works inside the editor's import pipeline), and converts any
+  `ImporterMeshInstance3D` nodes to `MeshInstance3D`, which `GLTFDocument` returns when the editor
+  hint is set (tool scripts, editor plugins, `godot --script` outside a project). It also places
+  compositions. `tools/smoke/godot_runtime.sh` tests it from a real game run (`check`), from editor
+  mode (`check-editor`), and renders a composition (`render`); the first two run in
+  `test/smoke.test.ts` wherever Godot is installed.
