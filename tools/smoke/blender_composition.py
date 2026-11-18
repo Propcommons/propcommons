@@ -103,7 +103,11 @@ cam.location = centre + direction * radius * 3.4
 cam.rotation_euler = (centre - cam.location).to_track_quat("-Z", "Y").to_euler()
 scene.camera = cam
 
-scene.render.engine = "BLENDER_EEVEE_NEXT" if "BLENDER_EEVEE_NEXT" in [e.identifier for e in bpy.types.RenderSettings.bl_rna.properties["engine"].enum_items] else "BLENDER_EEVEE"
+# Cycles renders glTF glass (transmission and volume) faithfully; EEVEE shows it as milky.
+scene.render.engine = "CYCLES"
+scene.cycles.samples = 64
+scene.cycles.use_denoising = True
+scene.cycles.device = "CPU"
 scene.render.resolution_x = 1280
 scene.render.resolution_y = 800
 scene.render.filepath = out_png
