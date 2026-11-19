@@ -344,7 +344,10 @@ export async function settleComposition(
     // REACH above still counts, for heights given a little too low.
     const given = item.position[1] as number;
     // The ground: the item's lowest point at y = 0.
-    let lift = -Math.min(...local.map((p) => p[1]));
+    // (A loop, not Math.min(...): big items have too many points to spread as arguments.)
+    let lowest = Infinity;
+    for (const p of local) lowest = Math.min(lowest, p[1]);
+    let lift = -lowest;
     let restsOn: "ground" | number = "ground";
     // The item's vertices onto what is already placed.
     for (const p of local)
