@@ -1,0 +1,26 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/row-of-books",
+  "version": 1,
+  "name": "Row of books",
+  "license": "CC0-1.0",
+  "size_class": "medium",
+  "tags": [
+    "living-room",
+    "books",
+    "decor"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "directed"
+      ]
+    }
+  ],
+  "ai_assisted": true,
+  "tools": [
+    "glTF-Transform",
+    "Claude Opus 5.5"
+  ]
+}

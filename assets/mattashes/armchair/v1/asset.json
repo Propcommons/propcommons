@@ -1,0 +1,27 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/armchair",
+  "version": 1,
+  "name": "Armchair",
+  "license": "CC0-1.0",
+  "size_class": "medium",
+  "tags": [
+    "furniture",
+    "living-room",
+    "chair",
+    "fabric"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "directed"
+      ]
+    }
+  ],
+  "ai_assisted": true,
+  "tools": [
+    "glTF-Transform",
+    "Claude Opus 5.5"
+  ]
+}
