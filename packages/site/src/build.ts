@@ -194,6 +194,9 @@ function sceneCard(o: SiteOptions, c: IndexComposition): Raw {
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
+/** Tags that name a kit, shown as quick filters in the gallery, in this order. */
+const KITS = ["kitchen", "workshop", "living-room", "bedroom", "food", "furniture"];
+
 function homePage(o: SiteOptions, index: Index, wanted: any): string {
   const live = index.assets.filter((a) => a.latest && !a.taken_down);
   const scenes = index.compositions.filter((c) => c.latest && !c.taken_down);
@@ -240,6 +243,13 @@ function homePage(o: SiteOptions, index: Index, wanted: any): string {
     <h2 id="library-title">Library</h2>
     <p class="muted">Every asset is CC0: use it for anything, no credit required.</p>
   </div>
+  <div class="kit-chips" id="kits" role="group" aria-label="Kits">${[
+    "",
+    ...KITS.filter((k) => tags.includes(k)),
+  ].map(
+    (k) =>
+      html`<button type="button" class="kit-chip" data-kit="${k}" aria-pressed="${k === "" ? "true" : "false"}">${k ? k.replace("-", " ") : "Everything"}</button>`,
+  )}</div>
   <form class="filters" id="filters" aria-label="Filter assets">
     <label>Tag <select name="tag"><option value="">All</option>${tags.map((t) => html`<option>${t}</option>`)}</select></label>
     <label>Size <select name="size"><option value="">All</option><option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option></select></label>
