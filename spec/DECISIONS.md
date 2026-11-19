@@ -388,3 +388,6 @@ up and still pass.
   gallery would otherwise download about 20 MB as people scroll. The PNG previews are unchanged
   for asset pages and reviewers; `index.json` is unchanged (the card path is the thumbnail's with
   `card.webp` in place of `thumb.png`), and the site falls back to the PNG where there's no card.
+- **Deploys keep the previews from the last deploy** (actions/cache, saved only by the deploy
+  workflow on main). The builder already re-renders only what changed, but each deploy used to
+  start empty and render all 60 assets: 6–9 minutes, growing with the library.

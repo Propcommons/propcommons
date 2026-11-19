@@ -31,6 +31,14 @@ jobs:
 
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: bash tools/ci/install-browser.sh
+      # Previews from the last deploy. The site builder re-renders only assets whose model,
+      # neighbours or renderer changed (each folder keeps a .key), so a deploy takes about a
+      # minute instead of growing with the library. Only this workflow (pushes to main) saves it.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: previews
+          key: previews-${{ github.sha }}
+          restore-keys: previews-
       - name: Build index.json, previews and pages
         run: npm run site
 
