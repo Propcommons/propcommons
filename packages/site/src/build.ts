@@ -7,6 +7,7 @@ import {
   cpSync,
   existsSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
@@ -23,7 +24,7 @@ import {
   type IndexComposition,
 } from "@propcommons/validator";
 import { marked } from "marked";
-import { html, page, type Raw, raw, safeLink, setRepoUrl } from "./html.ts";
+import { html, page, type Raw, raw, safeLink, setAssetVersion, setRepoUrl } from "./html.ts";
 
 const require = createRequire(import.meta.url);
 const STATIC_DIR = path.join(import.meta.dirname, "..", "static");
@@ -707,6 +708,11 @@ export async function buildSite(o: SiteOptions): Promise<Index> {
   siteUrl = config.site.url.endsWith("/") ? config.site.url : `${config.site.url}/`;
   (o as SiteOptions & { repo?: string }).repo = `${config.github.owner}/${config.github.repo}`;
   setRepoUrl(`https://github.com/${config.github.owner}/${config.github.repo}`);
+  const fingerprint = createHash("sha256");
+  for (const f of readdirSync(STATIC_DIR).sort())
+    fingerprint.update(readFileSync(path.join(STATIC_DIR, f)));
+  fingerprint.update(readFileSync(path.join(SCENE_DIR, "stage.js")));
+  setAssetVersion(fingerprint.digest("hex").slice(0, 10));
   if (o.previews) {
     await ensurePreviews(o, index);
     await ensureCompositionPreviews(o, index);

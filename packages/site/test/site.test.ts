@@ -152,7 +152,7 @@ describe("site", () => {
     const h = read("studio/index.html");
     expect(h).toContain("Content-Security-Policy");
     expect(h).toContain('<script type="importmap">');
-    expect(h).toContain('src="/propcommons/static/studio.js"');
+    expect(h).toMatch(/src="\/propcommons\/static\/studio.js\?v=[0-9a-f]{10}"/);
     expect(h).toContain('id="viewport"');
     expect(read("index.html")).toContain('href="/propcommons/studio/"');
     expect(read("compositions/alice/pair/v1/index.html")).toContain(

@@ -62,6 +62,16 @@ let repoUrl = "https://github.com/";
 const LOGO = `<svg class="logo" viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><path d="M16 3 28 9.5 16 16 4 9.5Z" fill="var(--accent-soft)"/><path d="M4 9.5 16 16v13L4 22.5Z" fill="var(--accent)"/><path d="M28 9.5 16 16v13l12-6.5Z" fill="var(--accent-strong)"/></svg>`;
 
 /** The repository's GitHub address, linked from every page's header and footer. */
+let assetVersion = "";
+/**
+ * A fingerprint of the site's own scripts and styles, added to their URLs, so a deploy takes
+ * effect at once instead of after GitHub Pages' ten-minute browser cache.
+ */
+export function setAssetVersion(v: string): void {
+  assetVersion = v;
+}
+const versioned = (url: string) => (assetVersion ? `${url}?v=${assetVersion}` : url);
+
 export function setRepoUrl(url: string): void {
   repoUrl = url;
 }
@@ -143,10 +153,10 @@ ${render(html`<html lang="en">
 <title>${o.title}</title>
 ${o.description ? html`<meta name="description" content="${o.description}">` : ""}
 <link rel="icon" href="data:,">
-<link rel="stylesheet" href="${o.base}static/style.css">
+<link rel="stylesheet" href="${versioned(`${o.base}static/style.css`)}">
 ${importMap ? raw(`<script type="importmap">${importMap}</script>`) : ""}
 ${o.modelViewer ? html`<script type="module" src="${o.base}vendor/model-viewer/model-viewer.min.js"></script>` : ""}
-${(o.scripts ?? []).map((s) => html`<script ${raw(s.module === false ? "defer" : 'type="module"')} src="${o.base}${s.src}"></script>`)}
+${(o.scripts ?? []).map((s) => html`<script ${raw(s.module === false ? "defer" : 'type="module"')} src="${versioned(`${o.base}${s.src}`)}"></script>`)}
 </head>
 <body${raw(o.app ? ' class="app"' : "")}>
 <a class="skip" href="#main">Skip to content</a>

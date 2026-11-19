@@ -411,3 +411,6 @@ up and still pass.
   composition is centred and resting on y = 0 (CMP-CENTER, CMP-GROUND) on export, credits the
   GitHub username given (or a placeholder to replace), and sets `ai_assisted` to true when
   "Describe a scene" laid any of it out (the scene remembers that), false otherwise.
+- **Script and stylesheet links carry a fingerprint** (`?v=` and the first 10 hex characters of
+  a hash of `static/` and `stage.js`), so a deploy reaches visitors at once; GitHub Pages lets
+  browsers keep files for ten minutes, and testing the Studio ran the previous script.
