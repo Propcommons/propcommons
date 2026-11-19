@@ -1,0 +1,179 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/bedroom",
+  "version": 1,
+  "name": "Bedroom",
+  "license": "CC0-1.0",
+  "tags": [
+    "bedroom",
+    "furniture"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "directed"
+      ]
+    }
+  ],
+  "ai_assisted": true,
+  "tools": [
+    "Claude Opus 5.5"
+  ],
+  "items": [
+    {
+      "asset": "mattashes/rug@2",
+      "position": [
+        0.03375,
+        0,
+        0.31
+      ],
+      "rotation": [
+        0,
+        0.707107,
+        0,
+        0.707107
+      ]
+    },
+    {
+      "asset": "mattashes/double-bed@1",
+      "position": [
+        0.03375,
+        0.008,
+        -0.24
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/bedside-table@1",
+      "position": [
+        -0.96625,
+        0,
+        -1.1
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/bedside-table@1",
+      "position": [
+        1.03375,
+        0,
+        -1.1
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/table-lamp@1",
+      "position": [
+        -0.96625,
+        0.55,
+        -1.14
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/alarm-clock@1",
+      "position": [
+        1.08375,
+        0.55,
+        -1.04
+      ],
+      "rotation": [
+        0,
+        -0.173648,
+        0,
+        0.984808
+      ]
+    },
+    {
+      "asset": "mattashes/row-of-books@1",
+      "position": [
+        2.03375,
+        0.85,
+        0.11
+      ],
+      "rotation": [
+        0,
+        -0.707107,
+        0,
+        0.707107
+      ]
+    },
+    {
+      "asset": "mattashes/wardrobe@1",
+      "position": [
+        -1.96625,
+        0,
+        0.31
+      ],
+      "rotation": [
+        0,
+        0.707107,
+        0,
+        0.707107
+      ]
+    },
+    {
+      "asset": "mattashes/chest-of-drawers@1",
+      "position": [
+        2.03375,
+        0,
+        0.26
+      ],
+      "rotation": [
+        0,
+        -0.707107,
+        0,
+        0.707107
+      ]
+    },
+    {
+      "asset": "mattashes/snake-plant@1",
+      "position": [
+        1.98375,
+        0,
+        1.06
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/scatter-cushion@1",
+      "position": [
+        0.23375,
+        0.57761,
+        -0.99
+      ],
+      "rotation": [
+        0,
+        0.130526,
+        0,
+        0.991445
+      ]
+    }
+  ]
+}
