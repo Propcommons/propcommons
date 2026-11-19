@@ -1,0 +1,24 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/toothbrush-mug",
+  "version": 1,
+  "name": "Toothbrush mug",
+  "license": "CC0-1.0",
+  "size_class": "small",
+  "tags": [
+    "bathroom"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "directed"
+      ]
+    }
+  ],
+  "ai_assisted": true,
+  "tools": [
+    "glTF-Transform",
+    "Claude Opus 5.5"
+  ]
+}
