@@ -1,0 +1,222 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/living-room-corner",
+  "version": 1,
+  "name": "Living room corner",
+  "license": "CC0-1.0",
+  "tags": [
+    "living-room",
+    "furniture",
+    "decor"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "directed"
+      ]
+    }
+  ],
+  "ai_assisted": true,
+  "tools": [
+    "Claude Opus 5.5"
+  ],
+  "items": [
+    {
+      "asset": "mattashes/rug@1",
+      "position": [
+        0.1375,
+        0,
+        0.3375
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/sofa@1",
+      "position": [
+        0.1375,
+        0.008,
+        -0.6125
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/coffee-table@1",
+      "position": [
+        0.1375,
+        0.008,
+        0.3875
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/armchair@1",
+      "position": [
+        1.4875,
+        0.008,
+        0.3875
+      ],
+      "rotation": [
+        0,
+        -0.707107,
+        0,
+        0.707107
+      ]
+    },
+    {
+      "asset": "mattashes/side-table@1",
+      "position": [
+        -1.1125,
+        0,
+        -0.6125
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/floor-lamp@1",
+      "position": [
+        1.4375,
+        0,
+        -0.6625
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/bookshelf@1",
+      "position": [
+        -1.7625,
+        0,
+        -0.0625
+      ],
+      "rotation": [
+        0,
+        0.707107,
+        0,
+        0.707107
+      ]
+    },
+    {
+      "asset": "mattashes/row-of-books@1",
+      "position": [
+        -1.7625,
+        0.44,
+        -0.0625
+      ],
+      "rotation": [
+        0,
+        0.707107,
+        0,
+        0.707107
+      ]
+    },
+    {
+      "asset": "mattashes/snake-plant@1",
+      "position": [
+        -1.7125,
+        0,
+        0.7875
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/scatter-cushion@1",
+      "position": [
+        0.7375,
+        0.46999,
+        -0.5225
+      ],
+      "rotation": [
+        0,
+        0.173648,
+        0,
+        0.984808
+      ]
+    },
+    {
+      "asset": "mattashes/teapot@1",
+      "position": [
+        0.1375,
+        0.428,
+        0.3875
+      ],
+      "rotation": [
+        0,
+        0.258819,
+        0,
+        0.965926
+      ]
+    },
+    {
+      "asset": "mattashes/ceramic-mug@1",
+      "position": [
+        0.4375,
+        0.428,
+        0.4575
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/ceramic-mug@1",
+      "position": [
+        -0.1625,
+        0.428,
+        0.3175
+      ],
+      "rotation": [
+        0,
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "asset": "mattashes/ceramic-mug@1",
+      "position": [
+        -1.1125,
+        0.55158,
+        -0.6125
+      ],
+      "rotation": [
+        0,
+        0.34202,
+        0,
+        0.939693
+      ]
+    }
+  ]
+}
