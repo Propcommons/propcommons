@@ -1,0 +1,27 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/olive-oil-bottle",
+  "version": 1,
+  "name": "Olive oil bottle",
+  "license": "CC0-1.0",
+  "size_class": "small",
+  "tags": [
+    "kitchen",
+    "bottle",
+    "glass",
+    "oil"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "directed"
+      ]
+    }
+  ],
+  "ai_assisted": true,
+  "tools": [
+    "glTF-Transform",
+    "Claude Opus 5.5"
+  ]
+}
