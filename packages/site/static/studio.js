@@ -101,6 +101,7 @@ function renderKits() {
     "bedroom",
     "garden",
     "office",
+    "bathroom",
     "food",
     "furniture",
     "tool",
