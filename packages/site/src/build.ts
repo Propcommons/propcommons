@@ -207,7 +207,8 @@ function homePage(o: SiteOptions, index: Index, wanted: any): string {
     <h1>Game props that fit together.</h1>
     <p class="lede">Every asset follows one contract: real-world scale, resting on the ground, one plain glTF file. So a bowl from one person and fruit from another drop into the same scene with no fixes.</p>
     <div class="cta">
-      <a class="button" href="#library">Browse the library</a>
+      <a class="button" href="${o.base}studio/">Build a scene</a>
+      <a class="button secondary" href="#library">Browse the library</a>
       <a class="button secondary" href="${o.base}contribute/">Add an asset</a>
     </div>
     <ul class="stats">
@@ -369,6 +370,7 @@ function assetPage(o: SiteOptions, index: Index, a: IndexAsset): string {
       <a class="button" href="${o.base}${a.files?.model}" download="${file}">Download .glb</a>
       <span class="muted">${fmtBytes(meas.file_bytes)}</span>
     </div>
+    <p><a class="button secondary small" href="${o.base}studio/?add=${encodeURIComponent(a.ref)}">Use it in a scene</a></p>
     ${a.files?.collision ? html`<p><a href="${o.base}${a.files.collision}" download="${a.id.replace("/", "-")}-v${a.version}-collision.glb">Collision shapes (.glb)</a></p>` : ""}
     <dl class="facts">
       <dt>Size</dt><dd>${dimensions(meas.bounds_m)}</dd>
@@ -455,7 +457,8 @@ function compositionPage(o: SiteOptions, index: Index, c: IndexComposition): str
     <div class="table-scroll"><table class="items"><thead><tr><th>#</th><th><span class="muted">Preview</span></th><th>Asset</th><th>Position (cm)</th><th>Scale</th></tr></thead><tbody>${rows}</tbody></table></div>
   </div>
   <aside class="panel" aria-label="Details">
-    <div class="download"><a class="button" href="composition.json" download="${c.id.replace("/", "-")}-v${c.version}.json">Download composition.json</a></div>
+    <div class="download"><a class="button" href="${o.base}studio/?scene=${encodeURIComponent(c.ref)}">Open in Studio</a></div>
+    <p><a href="composition.json" download="${c.id.replace("/", "-")}-v${c.version}.json">Download composition.json</a></p>
     <h2>Credits</h2>
     <p class="muted">Everyone whose work is in this scene.</p>
     ${credits(c.credits)}
@@ -471,6 +474,102 @@ function compositionPage(o: SiteOptions, index: Index, c: IndexComposition): str
     active: "compositions",
     importMap: true,
     scripts: [{ src: "static/composition.js" }],
+  });
+}
+
+function studioPage(o: SiteOptions, index: Index, repo: string): string {
+  const scenes = index.compositions.filter((c) => c.latest && !c.taken_down).length;
+  const body = html`
+<div class="studio" id="studio" data-base="${o.base}" data-index="${o.base}index.json">
+  <aside class="studio-library" aria-label="Library">
+    <div class="lib-head">
+      <label class="visually-hidden" for="search">Search the library</label>
+      <input id="search" type="search" placeholder="Search props (press /)" autocomplete="off">
+      <div class="chips" id="kits" role="group" aria-label="Kits"></div>
+      <p class="muted lib-count" id="lib-count">Loading the library…</p>
+    </div>
+    <ul class="lib-grid" id="library"></ul>
+    <p class="lib-empty muted" id="lib-empty" hidden>Nothing matches. <a href="https://github.com/${repo}/issues/new/choose">Ask for it</a> and someone can make it.</p>
+  </aside>
+  <section class="studio-stage" aria-label="Scene">
+    <div class="toolbar" role="toolbar" aria-label="Scene tools">
+      <label class="visually-hidden" for="scene-name">Scene name</label>
+      <input id="scene-name" class="scene-name" value="Untitled scene" maxlength="80">
+      <button type="button" id="new">New</button>
+      <button type="button" id="describe" title="Describe a scene in words and have an AI assistant lay it out">Describe…</button>
+      <label class="visually-hidden" for="open">Open a published scene</label>
+      <select id="open"><option value="">Open a scene (${scenes})…</option></select>
+      <label class="button-like">Open file<input id="open-file" type="file" accept=".json,application/json" hidden></label>
+      <span class="sep" aria-hidden="true"></span>
+      <button type="button" id="undo" title="Undo (Ctrl/Cmd+Z)">Undo</button>
+      <button type="button" id="redo" title="Redo (Shift+Ctrl/Cmd+Z)">Redo</button>
+      <span class="sep" aria-hidden="true"></span>
+      <button type="button" id="turn-left" title="Turn left 15° (Q; Shift+Q for 90°)">↺ Turn</button>
+      <button type="button" id="turn-right" title="Turn right 15° (E; Shift+E for 90°)">Turn ↻</button>
+      <button type="button" id="duplicate" title="Duplicate (Ctrl/Cmd+D)">Duplicate</button>
+      <button type="button" id="delete" title="Delete (Delete key)">Delete</button>
+      <span class="spacer"></span>
+      <button type="button" id="grid" aria-pressed="true" title="Show the floor grid (squares are 50 cm)">Grid</button>
+      <button type="button" id="frame" title="Fit the scene in view (F)">Fit view</button>
+      <button type="button" id="help" title="Controls and shortcuts (?)" aria-label="Help">?</button>
+      <button type="button" id="picture" title="Save a picture of the view">Picture</button>
+      <button type="button" id="share" title="Copy a link that opens this scene">Share link</button>
+      <button type="button" id="export-json" title="Download composition.json, to publish the scene">composition.json</button>
+      <button type="button" class="primary" id="export-glb" title="Download the whole scene as one glTF file">Download .glb</button>
+    </div>
+    <div class="viewport-wrap">
+      <canvas id="viewport" aria-label="3D scene: drag props to move them, drag empty space to look around"></canvas>
+      <div class="empty-state" id="empty"><h2>Build a scene</h2><p>Pick a prop on the left, then click on the floor to place it. Props land on whatever is under them: put a table down first, then a plate on it.</p><p class="muted">Or open one of the published scenes from the toolbar.</p></div>
+      <div class="inspector" id="inspector" hidden><a id="insp-name" href="#"></a><span id="insp-meta" class="muted"></span></div>
+      <p class="toast" id="toast" role="status" hidden></p>
+    </div>
+    <div class="statusbar"><span id="hint">Loading…</span><span id="count" class="muted"></span></div>
+  </section>
+</div>
+<dialog id="describe-dialog" class="dialog wide">
+  <form method="dialog" id="describe-form">
+    <h2>Describe a scene</h2>
+    <p class="muted">Say what you want. The Studio writes a prompt that lists every prop in the library with its size; paste it into any AI assistant (Claude, ChatGPT…), then paste the reply back here and the Studio lays the scene out, resting each prop on what's under it.</p>
+    <label>1. What should the scene be? <textarea id="describe-text" rows="2" placeholder="A cosy breakfast for two at the kitchen table, with bread and fruit"></textarea></label>
+    <div class="dialog-actions left"><button type="button" id="describe-copy" class="primary">Copy the prompt</button><span id="describe-copied" class="muted" role="status"></span></div>
+    <label>2. Paste the assistant's reply <textarea id="describe-reply" rows="6" placeholder='{"items": [{"asset": "mattashes/kitchen-table@1", "x": 0, "z": 0, "y": 0, "turn": 0}, …]}'></textarea></label>
+    <p class="muted" id="describe-error" role="alert"></p>
+    <div class="dialog-actions"><button value="cancel" formnovalidate>Close</button><button type="button" id="describe-build" class="primary">Build it</button></div>
+  </form>
+</dialog>
+<dialog id="help-dialog" class="dialog">
+  <form method="dialog">
+    <h2>Controls</h2>
+    <dl class="keys">
+      <dt>Place a prop</dt><dd>Click it in the library, then click in the scene. It lands on whatever is under the pointer. Keep clicking to place more; Esc stops.</dd>
+      <dt>Move</dt><dd>Drag a prop. It slides over surfaces: drag a plate onto a table and it sits on the table.</dd>
+      <dt>Turn</dt><dd>Q and E (15°), with Shift for 90°. Works while placing, too.</dd>
+      <dt>Look around</dt><dd>Drag empty space to orbit, right-drag or two fingers to pan, scroll or pinch to zoom. F fits the scene in view.</dd>
+      <dt>Edit</dt><dd>Delete removes the selected prop. Ctrl/Cmd+D duplicates it. Ctrl/Cmd+Z undoes, Shift+Ctrl/Cmd+Z redoes.</dd>
+      <dt>Keep it</dt><dd>Your scene is saved in this browser as you work. Share link copies a link that opens it anywhere. Download .glb gives you the whole scene for Godot, Unity, Blender or a web game.</dd>
+    </dl>
+    <div class="dialog-actions"><button value="close" class="primary">Got it</button></div>
+  </form>
+</dialog>
+<dialog id="export-dialog" class="dialog">
+  <form method="dialog" id="export-form">
+    <h2>Download composition.json</h2>
+    <p class="muted">A composition lists each prop by its pinned ID with its position and rotation, so the scene rebuilds exactly anywhere. Publish it to the library the same way as an asset: see <a href="${o.base}contribute/">Contribute</a>.</p>
+    <label>Scene name <input id="export-name" maxlength="80" required></label>
+    <label>Your GitHub username <span class="muted">(optional, for credit)</span> <input id="export-handle" maxlength="39" autocomplete="off" placeholder="your-github-name"></label>
+    <div class="dialog-actions"><button value="cancel" formnovalidate>Cancel</button><button value="download" class="primary">Download</button></div>
+  </form>
+</dialog>`;
+  return page({
+    base: o.base,
+    title: "Studio · Prop Commons",
+    description:
+      "Build a scene from the Prop Commons library in your browser, then download it as one glTF file.",
+    body,
+    active: "studio",
+    app: true,
+    importMap: true,
+    scripts: [{ src: "static/studio.js" }],
   });
 }
 
@@ -635,7 +734,12 @@ export async function buildSite(o: SiteOptions): Promise<Index> {
   copy(path.join(THREE_DIR, "build/three.core.js"), "vendor/three/three.core.js");
   // Three.js addons the viewers import, plus whatever those import in turn.
   const jsm = path.join(THREE_DIR, "examples/jsm");
-  const pending = ["loaders/GLTFLoader.js", "loaders/HDRLoader.js", "controls/OrbitControls.js"];
+  const pending = [
+    "loaders/GLTFLoader.js",
+    "loaders/HDRLoader.js",
+    "controls/OrbitControls.js",
+    "exporters/GLTFExporter.js",
+  ];
   const copied = new Set<string>();
   while (pending.length) {
     const rel = pending.pop() as string;
@@ -707,6 +811,7 @@ export async function buildSite(o: SiteOptions): Promise<Index> {
   write("compositions/index.html", compositionsPage(o, index));
   const repo = `${config.github.owner}/${config.github.repo}`;
   write("wanted/index.html", wantedPage(o, wanted, repo));
+  write("studio/index.html", studioPage(o, index, repo));
   write("contribute/index.html", contributePage(o, repo));
   write("about/index.html", aboutPage(o, config));
   write("llms.txt", llmsTxt(o, config, index));

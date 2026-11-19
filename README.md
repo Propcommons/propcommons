@@ -5,6 +5,11 @@ made by different people fit together without rework.
 
 **Browse the library:** https://propcommons.github.io/propcommons/
 
+**Build a scene in your browser:** https://propcommons.github.io/propcommons/studio/ — pick props,
+click to place them (they land on whatever is under them: the floor, a table, a shelf), then
+download the whole scene as one `.glb` for Godot, Unity, Blender or a web game. "Describe…" writes a
+prompt for any AI assistant to lay a scene out from a sentence.
+
 A strawberry from one person, a bowl from another and a cutting board from a third load together
 as one fruit bowl, at the right scale and resting correctly, with no manual fixes. That works
 because every asset is a plain glTF file in metres, standing on the ground, centred, and checked

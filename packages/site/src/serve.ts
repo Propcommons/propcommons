@@ -12,6 +12,7 @@ const TYPES: Record<string, string> = {
   ".json": "application/json",
   ".glb": "model/gltf-binary",
   ".png": "image/png",
+  ".webp": "image/webp",
   ".hdr": "application/octet-stream",
   ".txt": "text/plain; charset=utf-8",
   ".md": "text/markdown; charset=utf-8",

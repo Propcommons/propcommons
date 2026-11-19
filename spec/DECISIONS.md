@@ -391,3 +391,23 @@ up and still pass.
 - **Deploys keep the previews from the last deploy** (actions/cache, saved only by the deploy
   workflow on main). The builder already re-renders only what changed, but each deploy used to
   start empty and render all 60 assets: 6–9 minutes, growing with the library.
+
+## The Studio (19 November 2026)
+
+- **What the app is**: a scene builder on the site (`/studio/`). Pick props from the library, place
+  them in a 3D room, and download the scene as one `.glb` for any engine, or as a
+  `composition.json` to publish to the library. The maintainer confirmed this direction.
+- **It is a static page**, like the rest of the site: no server, no accounts. Scenes are kept in
+  the browser (localStorage); the same Three.js reference scene as the previews and viewers.
+- **Props land on what's under them** with the rule `propcommons settle` uses: an item is lowered
+  from where it is put (the surface under the pointer, plus 2 cm) until a point on its underside
+  meets a surface. For speed it tests about 60 points on the underside (its outline in 24
+  directions, a ring further in, and the lowest points), not every vertex.
+- **Describe a scene** has no AI call of its own: it writes a prompt listing every prop with its
+  size and the placement rules, to paste into any assistant; the Studio builds the reply's JSON
+  plan (`asset`, `x`, `z`, `y`, `turn`), lowering each prop onto what's under it. No API key or
+  account is needed, and nothing leaves the page.
+- **Exports**: the `.glb` holds every placed prop as its own node named after it; the
+  composition is centred and resting on y = 0 (CMP-CENTER, CMP-GROUND) on export, credits the
+  GitHub username given (or a placeholder to replace), and sets `ai_assisted` to true when
+  "Describe a scene" laid any of it out (the scene remembers that), false otherwise.

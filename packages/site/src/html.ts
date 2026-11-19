@@ -77,7 +77,9 @@ export interface PageOptions {
   importMap?: boolean;
   /** Load the model-viewer bundle. */
   modelViewer?: boolean;
-  active?: "gallery" | "compositions" | "wanted" | "contribute" | "about";
+  active?: "gallery" | "studio" | "compositions" | "wanted" | "contribute" | "about";
+  /** A full-window app page: no footer, and main is not width-limited. */
+  app?: boolean;
 }
 
 export function page(o: PageOptions): string {
@@ -98,40 +100,7 @@ export function page(o: PageOptions): string {
   ].join("; ");
   const nav = (key: PageOptions["active"], href: string, label: string) =>
     html`<a href="${o.base}${href}"${raw(o.active === key ? ' aria-current="page"' : "")}>${label}</a>`;
-  return `<!doctype html>
-${render(html`<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="${csp}">
-<meta name="referrer" content="no-referrer">
-<title>${o.title}</title>
-${o.description ? html`<meta name="description" content="${o.description}">` : ""}
-<link rel="icon" href="data:,">
-<link rel="stylesheet" href="${o.base}static/style.css">
-${importMap ? raw(`<script type="importmap">${importMap}</script>`) : ""}
-${o.modelViewer ? html`<script type="module" src="${o.base}vendor/model-viewer/model-viewer.min.js"></script>` : ""}
-${(o.scripts ?? []).map((s) => html`<script ${raw(s.module === false ? "defer" : 'type="module"')} src="${o.base}${s.src}"></script>`)}
-</head>
-<body>
-<a class="skip" href="#main">Skip to content</a>
-<header class="site">
-  <div class="wrap header-inner">
-    <a class="brand" href="${o.base}">${raw(LOGO)}<span>Prop Commons</span></a>
-    <nav aria-label="Site">
-      ${nav("gallery", "", "Library")}
-      ${nav("compositions", "compositions/", "Compositions")}
-      ${nav("wanted", "wanted/", "Wanted")}
-      ${nav("about", "about/", "About")}
-      <a class="nav-github" href="${repoUrl}">GitHub</a>
-      <a class="button small${o.active === "contribute" ? " current" : ""}" href="${o.base}contribute/">Contribute</a>
-    </nav>
-  </div>
-</header>
-<main id="main" class="wrap">
-${o.body}
-</main>
-<footer class="site">
+  const footer = html`<footer class="site">
   <div class="wrap footer-grid">
     <div>
       <a class="brand" href="${o.base}">${raw(LOGO)}<span>Prop Commons</span></a>
@@ -163,7 +132,42 @@ ${o.body}
     </div>
   </div>
   <p class="wrap fineprint muted">The spec text is CC BY 4.0 and the code is MIT.</p>
-</footer>
+</footer>`;
+  return `<!doctype html>
+${render(html`<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="${csp}">
+<meta name="referrer" content="no-referrer">
+<title>${o.title}</title>
+${o.description ? html`<meta name="description" content="${o.description}">` : ""}
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="${o.base}static/style.css">
+${importMap ? raw(`<script type="importmap">${importMap}</script>`) : ""}
+${o.modelViewer ? html`<script type="module" src="${o.base}vendor/model-viewer/model-viewer.min.js"></script>` : ""}
+${(o.scripts ?? []).map((s) => html`<script ${raw(s.module === false ? "defer" : 'type="module"')} src="${o.base}${s.src}"></script>`)}
+</head>
+<body${raw(o.app ? ' class="app"' : "")}>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site">
+  <div class="wrap header-inner">
+    <a class="brand" href="${o.base}">${raw(LOGO)}<span>Prop Commons</span></a>
+    <nav aria-label="Site">
+      ${nav("gallery", "", "Library")}
+      ${nav("studio", "studio/", "Studio")}
+      ${nav("compositions", "compositions/", "Compositions")}
+      ${nav("wanted", "wanted/", "Wanted")}
+      ${nav("about", "about/", "About")}
+      <a class="nav-github" href="${repoUrl}">GitHub</a>
+      <a class="button small${o.active === "contribute" ? " current" : ""}" href="${o.base}contribute/">Contribute</a>
+    </nav>
+  </div>
+</header>
+<main id="main"${raw(o.app ? "" : ' class="wrap"')}>
+${o.body}
+</main>
+${o.app ? "" : footer}
 </body>
 </html>`)}
 `;
