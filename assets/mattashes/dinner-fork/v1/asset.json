@@ -1,0 +1,28 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/dinner-fork",
+  "version": 1,
+  "name": "Dinner fork, steel",
+  "license": "CC0-1.0",
+  "size_class": "small",
+  "tags": [
+    "kitchen",
+    "tableware",
+    "cutlery",
+    "fork",
+    "steel"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "directed"
+      ]
+    }
+  ],
+  "ai_assisted": true,
+  "tools": [
+    "glTF-Transform",
+    "Claude Opus 5.5"
+  ]
+}
