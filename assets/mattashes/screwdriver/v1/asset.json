@@ -1,0 +1,26 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/screwdriver",
+  "version": 1,
+  "name": "Screwdriver, flat",
+  "license": "CC0-1.0",
+  "size_class": "small",
+  "tags": [
+    "workshop",
+    "tool",
+    "screwdriver"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "directed"
+      ]
+    }
+  ],
+  "ai_assisted": true,
+  "tools": [
+    "glTF-Transform",
+    "Claude Opus 5.5"
+  ]
+}

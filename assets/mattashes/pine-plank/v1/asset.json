@@ -1,0 +1,26 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/pine-plank",
+  "version": 1,
+  "name": "Pine plank, 1 m",
+  "license": "CC0-1.0",
+  "size_class": "medium",
+  "tags": [
+    "workshop",
+    "wood",
+    "material"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "directed"
+      ]
+    }
+  ],
+  "ai_assisted": true,
+  "tools": [
+    "glTF-Transform",
+    "Claude Opus 5.5"
+  ]
+}
