@@ -1,0 +1,27 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/side-table",
+  "version": 2,
+  "name": "Side table, round",
+  "license": "CC0-1.0",
+  "size_class": "medium",
+  "tags": [
+    "furniture",
+    "living-room",
+    "table",
+    "wood"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "directed"
+      ]
+    }
+  ],
+  "ai_assisted": true,
+  "tools": [
+    "glTF-Transform",
+    "Claude Opus 5.5"
+  ]
+}

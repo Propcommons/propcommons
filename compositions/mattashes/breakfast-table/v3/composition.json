@@ -1,0 +1,209 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/breakfast-table",
+  "version": 3,
+  "name": "Breakfast table",
+  "license": "CC0-1.0",
+  "tags": [
+    "kitchen",
+    "food",
+    "furniture",
+    "table-setting"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "directed"
+      ]
+    }
+  ],
+  "ai_assisted": true,
+  "tools": [
+    "Claude Opus 5.5"
+  ],
+  "items": [
+    {
+      "asset": "mattashes/kitchen-table@2",
+      "position": [
+        0,
+        0,
+        -0.18588
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/kitchen-chair@2",
+      "position": [
+        0,
+        0,
+        0.33412
+      ],
+      "rotation": [
+        0,
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "asset": "mattashes/dinner-plate@1",
+      "position": [
+        0,
+        0.75,
+        -0.01588
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/dinner-fork@1",
+      "position": [
+        -0.185,
+        0.75,
+        -0.01588
+      ],
+      "rotation": [
+        0,
+        0.707107,
+        0,
+        0.707107
+      ]
+    },
+    {
+      "asset": "mattashes/table-spoon@1",
+      "position": [
+        0.185,
+        0.75,
+        -0.01588
+      ],
+      "rotation": [
+        0,
+        0.707107,
+        0,
+        0.707107
+      ]
+    },
+    {
+      "asset": "mattashes/ceramic-mug@1",
+      "position": [
+        0.29,
+        0.75,
+        -0.16588
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/drinking-glass@1",
+      "position": [
+        0.17,
+        0.75,
+        -0.21588
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/cutting-board@1",
+      "position": [
+        -0.2,
+        0.75,
+        -0.35588
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/bread-loaf@2",
+      "position": [
+        -0.25,
+        0.77,
+        -0.35588
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/kitchen-knife@1",
+      "position": [
+        -0.19,
+        0.77,
+        -0.46088
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/cheese-wedge@1",
+      "position": [
+        -0.06,
+        0.77,
+        -0.32588
+      ],
+      "rotation": [
+        0,
+        -0.258819,
+        0,
+        0.965926
+      ]
+    },
+    {
+      "asset": "mattashes/banana@1",
+      "position": [
+        0.31,
+        0.75,
+        -0.39588
+      ],
+      "rotation": [
+        0,
+        0.173648,
+        0,
+        0.984808
+      ]
+    },
+    {
+      "asset": "mattashes/orange@2",
+      "position": [
+        0.15,
+        0.75,
+        -0.40588
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    }
+  ]
+}

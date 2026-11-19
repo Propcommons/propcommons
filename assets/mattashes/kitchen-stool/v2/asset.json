@@ -1,0 +1,27 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/kitchen-stool",
+  "version": 2,
+  "name": "Kitchen stool, wooden",
+  "license": "CC0-1.0",
+  "size_class": "medium",
+  "tags": [
+    "furniture",
+    "kitchen",
+    "stool",
+    "wood"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "directed"
+      ]
+    }
+  ],
+  "ai_assisted": true,
+  "tools": [
+    "glTF-Transform",
+    "Claude Opus 5.5"
+  ]
+}

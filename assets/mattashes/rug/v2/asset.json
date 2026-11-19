@@ -1,0 +1,26 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/rug",
+  "version": 2,
+  "name": "Rug, woven",
+  "license": "CC0-1.0",
+  "size_class": "large",
+  "tags": [
+    "living-room",
+    "textile",
+    "rug"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "directed"
+      ]
+    }
+  ],
+  "ai_assisted": true,
+  "tools": [
+    "glTF-Transform",
+    "Claude Opus 5.5"
+  ]
+}
