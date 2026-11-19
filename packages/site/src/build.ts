@@ -195,7 +195,16 @@ function sceneCard(o: SiteOptions, c: IndexComposition): Raw {
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 /** Tags that name a kit, shown as quick filters in the gallery, in this order. */
-const KITS = ["kitchen", "workshop", "living-room", "bedroom", "garden", "food", "furniture"];
+const KITS = [
+  "kitchen",
+  "workshop",
+  "living-room",
+  "bedroom",
+  "garden",
+  "office",
+  "food",
+  "furniture",
+];
 
 function homePage(o: SiteOptions, index: Index, wanted: any): string {
   const live = index.assets.filter((a) => a.latest && !a.taken_down);

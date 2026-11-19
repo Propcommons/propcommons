@@ -100,6 +100,7 @@ function renderKits() {
     "living-room",
     "bedroom",
     "garden",
+    "office",
     "food",
     "furniture",
     "tool",
