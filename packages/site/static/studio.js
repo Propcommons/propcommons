@@ -669,6 +669,29 @@ function save(s) {
   }
 }
 
+/** Downloads every model a scene needs at once (not one after another), showing progress. */
+async function preload(refs) {
+  const todo = [...new Set(refs)].filter((r) => byRef.has(r));
+  if (!todo.length) return;
+  let done = 0;
+  loading = true;
+  updateButtons();
+  setHint(`Loading ${todo.length} props…`);
+  try {
+    await Promise.all(
+      todo.map((r) =>
+        loadModel(r).then(() => {
+          done++;
+          setHint(`Loading props… ${done} of ${todo.length}`);
+        }),
+      ),
+    );
+  } finally {
+    loading = false;
+  }
+}
+let loading = false;
+
 async function restore(s) {
   const data = JSON.parse(s);
   for (const it of [...items]) world.remove(it.obj);
@@ -677,6 +700,7 @@ async function restore(s) {
   $("scene-name").value = data.name ?? "Untitled scene";
   aiUsed = data.ai === true;
   const missing = [];
+  await preload((data.items ?? []).map((i) => i.asset));
   for (const i of data.items ?? []) {
     if (!byRef.has(i.asset)) {
       missing.push(i.asset);
@@ -687,6 +711,7 @@ async function restore(s) {
   nextId = Math.max(1, ...items.map((it) => it.id + 1));
   refitStage();
   updateButtons();
+  if (!placing) setHint(defaultHint());
   redraw();
   if (missing.length)
     toast(
@@ -971,6 +996,7 @@ function parsePlan(reply) {
 
 async function buildPlan(steps) {
   aiUsed = true;
+  await preload(steps.map((x) => x.ref));
   // Bottom of the pile first: by the height given, then flat things before tall ones, so a rug
   // goes down before the table that stands on it, whatever order the plan lists them in.
   const height = (ref) => byRef.get(ref)?.measured?.bounds_m?.[1] ?? 0;
@@ -1056,7 +1082,7 @@ function updateButtons() {
   $("count").textContent = items.length
     ? `${items.length} item${items.length === 1 ? "" : "s"}`
     : "Empty scene";
-  $("empty").hidden = items.length > 0 || !!placing;
+  $("empty").hidden = items.length > 0 || !!placing || loading;
 }
 const defaultHint = () =>
   items.length
