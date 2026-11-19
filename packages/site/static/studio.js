@@ -98,10 +98,10 @@ function renderKits() {
     "kitchen",
     "workshop",
     "living-room",
+    "bedroom",
+    "garden",
     "food",
     "furniture",
-    "tableware",
-    "cookware",
     "tool",
   ];
   const kits = preferred.filter((t) => counts.has(t));
