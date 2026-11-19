@@ -1,0 +1,26 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/double-bed",
+  "version": 2,
+  "name": "Double bed, made",
+  "license": "CC0-1.0",
+  "size_class": "large",
+  "tags": [
+    "bedroom",
+    "furniture",
+    "bed"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "directed"
+      ]
+    }
+  ],
+  "ai_assisted": true,
+  "tools": [
+    "glTF-Transform",
+    "Claude Opus 5.5"
+  ]
+}

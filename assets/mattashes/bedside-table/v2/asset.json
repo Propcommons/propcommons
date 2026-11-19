@@ -1,0 +1,27 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/bedside-table",
+  "version": 2,
+  "name": "Bedside table, two drawers",
+  "license": "CC0-1.0",
+  "size_class": "medium",
+  "tags": [
+    "bedroom",
+    "furniture",
+    "table",
+    "wood"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "directed"
+      ]
+    }
+  ],
+  "ai_assisted": true,
+  "tools": [
+    "glTF-Transform",
+    "Claude Opus 5.5"
+  ]
+}

@@ -1,0 +1,193 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/home-office",
+  "version": 2,
+  "name": "Home office",
+  "license": "CC0-1.0",
+  "tags": [
+    "office",
+    "furniture"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "directed"
+      ]
+    }
+  ],
+  "ai_assisted": true,
+  "tools": [
+    "Claude Opus 5.5"
+  ],
+  "items": [
+    {
+      "asset": "mattashes/office-desk@2",
+      "position": [
+        -0.11,
+        0.008,
+        -0.275
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/office-chair@1",
+      "position": [
+        -0.21,
+        0.008,
+        0.275
+      ],
+      "rotation": [
+        0,
+        0.991445,
+        0,
+        0.130526
+      ]
+    },
+    {
+      "asset": "mattashes/laptop@1",
+      "position": [
+        -0.21,
+        0.748,
+        -0.255
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/desk-lamp@1",
+      "position": [
+        -0.66,
+        0.748,
+        -0.425
+      ],
+      "rotation": [
+        0,
+        0.173648,
+        0,
+        0.984808
+      ]
+    },
+    {
+      "asset": "mattashes/notebook@1",
+      "position": [
+        0.14,
+        0.748,
+        -0.175
+      ],
+      "rotation": [
+        0,
+        -0.104528,
+        0,
+        0.994522
+      ]
+    },
+    {
+      "asset": "mattashes/pencil-pot@1",
+      "position": [
+        0.39,
+        0.748,
+        -0.455
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/ceramic-mug@1",
+      "position": [
+        0.21,
+        0.748,
+        -0.395
+      ],
+      "rotation": [
+        0,
+        0.34202,
+        0,
+        0.939693
+      ]
+    },
+    {
+      "asset": "mattashes/bookshelf@2",
+      "position": [
+        1.14,
+        0,
+        -0.475
+      ],
+      "rotation": [
+        0,
+        -0.707107,
+        0,
+        0.707107
+      ]
+    },
+    {
+      "asset": "mattashes/row-of-books@1",
+      "position": [
+        1.14,
+        0.44,
+        -0.525
+      ],
+      "rotation": [
+        0,
+        -0.707107,
+        0,
+        0.707107
+      ]
+    },
+    {
+      "asset": "mattashes/row-of-books@1",
+      "position": [
+        1.14,
+        1.12,
+        -0.375
+      ],
+      "rotation": [
+        0,
+        -0.707107,
+        0,
+        0.707107
+      ]
+    },
+    {
+      "asset": "mattashes/snake-plant@1",
+      "position": [
+        -1.16,
+        0.008,
+        -0.425
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/rug@2",
+      "position": [
+        -0.11,
+        0,
+        0.175
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    }
+  ]
+}
