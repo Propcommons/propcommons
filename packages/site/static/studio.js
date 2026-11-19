@@ -383,7 +383,15 @@ function carriedBy(it) {
 // Pointer: placing, selecting and dragging
 
 const pointer = new THREE.Vector2();
+/** Snap positions to a 5 cm grid: the Snap button, or hold Shift to flip it for one move. */
+const SNAP = 0.05;
+let snapOn = false;
+let shiftHeld = false;
+const snapping = () => snapOn !== shiftHeld;
+const snap = (v) => (snapping() ? Math.round(v / SNAP) * SNAP : v);
+
 function setPointer(e) {
+  shiftHeld = !!e.shiftKey;
   const r = canvas.getBoundingClientRect();
   pointer.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
 }
@@ -454,8 +462,10 @@ function movePlacing() {
   }
   const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), placing.yaw);
   placing.ghost.quaternion.copy(q);
-  const y = restHeight(placing.samples, q, 1, at.point.x, at.point.z, at.point.y, null);
-  placing.ghost.position.set(at.point.x, y, at.point.z);
+  const x = snap(at.point.x);
+  const z = snap(at.point.z);
+  const y = restHeight(placing.samples, q, 1, x, z, at.point.y, null);
+  placing.ghost.position.set(x, y, z);
   placing.ghost.visible = true;
   redraw();
 }
@@ -481,8 +491,8 @@ canvas.addEventListener("pointermove", (e) => {
     const at = pick(drag.moving);
     if (!at) return;
     const o = drag.it.obj;
-    o.position.x = at.point.x - drag.dx;
-    o.position.z = at.point.z - drag.dz;
+    o.position.x = snap(at.point.x - drag.dx);
+    o.position.z = snap(at.point.z - drag.dz);
     o.position.y = restHeight(
       drag.samples,
       o.quaternion,
@@ -1144,6 +1154,17 @@ bind("export-json", exportComposition);
 bind("picture", exportPicture);
 bind("share", shareLink);
 bind("help", () => $("help-dialog").showModal());
+bind("snap", () => {
+  snapOn = !snapOn;
+  $("snap").setAttribute("aria-pressed", String(snapOn));
+  try {
+    localStorage.setItem("propcommons-studio-snap", snapOn ? "1" : "0");
+  } catch {}
+});
+try {
+  snapOn = localStorage.getItem("propcommons-studio-snap") === "1";
+  $("snap").setAttribute("aria-pressed", String(snapOn));
+} catch {}
 bind("try-scene", () => {
   // The scene with the most items shows off the most.
   const best = [...compositions].sort((a, b) => b.items.length - a.items.length)[0];

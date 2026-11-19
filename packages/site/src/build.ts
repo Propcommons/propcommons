@@ -521,6 +521,7 @@ function studioPage(o: SiteOptions, index: Index, repo: string): string {
       <button type="button" id="delete" title="Delete (Delete key)">Delete</button>
       <span class="spacer"></span>
       <button type="button" id="grid" aria-pressed="true" title="Show the floor grid (squares are 50 cm)">Grid</button>
+      <button type="button" id="snap" aria-pressed="false" title="Snap positions to 5 cm (hold Shift to flip it for one move)">Snap</button>
       <button type="button" id="frame" title="Fit the scene in view (F)">Fit view</button>
       <button type="button" id="help" title="Controls and shortcuts (?)" aria-label="Help">?</button>
       <button type="button" id="picture" title="Save a picture of the view">Picture</button>
@@ -555,6 +556,7 @@ function studioPage(o: SiteOptions, index: Index, repo: string): string {
       <dt>Place a prop</dt><dd>Click it in the library, then click in the scene. It lands on whatever is under the pointer. Keep clicking to place more; Esc stops.</dd>
       <dt>Move</dt><dd>Drag a prop. It slides over surfaces: drag a plate onto a table and it sits on the table.</dd>
       <dt>Turn</dt><dd>Q and E (15°), with Shift for 90°. Works while placing, too.</dd>
+      <dt>Line things up</dt><dd>Snap puts props on a 5 cm grid as you place and drag them. Holding Shift while you move flips it for that move.</dd>
       <dt>Look around</dt><dd>Drag empty space to orbit, right-drag or two fingers to pan, scroll or pinch to zoom. F fits the scene in view.</dd>
       <dt>Edit</dt><dd>Delete removes the selected prop. Ctrl/Cmd+D duplicates it. Ctrl/Cmd+Z undoes, Shift+Ctrl/Cmd+Z redoes.</dd>
       <dt>Keep it</dt><dd>Your scene is saved in this browser as you work. Share link copies a link that opens it anywhere. Download .glb gives you the whole scene for Godot, Unity, Blender or a web game.</dd>
