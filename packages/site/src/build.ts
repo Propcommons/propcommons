@@ -472,6 +472,15 @@ function wantedPage(o: SiteOptions, wanted: any, repo: string): string {
     })}`;
   const search = (w: any) =>
     `https://github.com/search?${new URLSearchParams({ q: `repo:${repo} "${w.id}"`, type: "issues" })}`;
+  if (!list.length)
+    return page({
+      base: o.base,
+      title: "Wanted · Prop Commons",
+      body: html`<h1>Wanted</h1>
+<p>Everything on the list has been made. Nothing is waiting for a maker right now.</p>
+<p>You can still add something the kit doesn't have yet: check <a href="${o.base}">the library</a> so you don't duplicate an asset, then follow <a href="${o.base}contribute/">Contribute</a>. To suggest something for the list, use the <a href="https://github.com/${repo}/issues/new/choose">Request an asset</a> form.</p>`,
+      active: "wanted",
+    });
   const body = html`<h1>Wanted</h1>
 <p>Assets the kit needs. Pick one, then:</p>
 <ol>
@@ -500,7 +509,7 @@ function contributePage(o: SiteOptions, repo: string): string {
 <ol class="steps">
   <li><strong>Set up once</strong>: a GitHub account, git, Node.js 26.13 or later, and the GitHub CLI signed in with <code>gh auth login</code>. Tell git your name and GitHub noreply email with <code>git config --global user.name</code> and <code>user.email</code>. Blender if you model in Blender.</li>
   <li><strong>Get the project</strong>: <code>gh repo fork ${repo} --clone</code>, then <code>npm ci</code> in the folder, and <code>npx playwright install --only-shell chromium</code> once for preview images.</li>
-  <li><strong>Pick something</strong> from the <a href="${o.base}wanted/">Wanted list</a> and claim it.</li>
+  <li><strong>Pick something</strong> from the <a href="${o.base}wanted/">Wanted list</a> and claim it, or anything the library doesn't have yet.</li>
   <li><strong>Start the folder</strong>: <code>npx propcommons init your-handle/your-asset</code>.</li>
   <li><strong>Make the model</strong> in metres, standing on the ground, with image textures or plain colours. From Blender, the export script does the fiddly parts.</li>
   <li><strong>Check it</strong>: <code>npx propcommons validate</code> until it says PASS, then <code>npx propcommons preview</code> and look at the images. PASS means the file is well-formed; the images show whether it looks right.</li>

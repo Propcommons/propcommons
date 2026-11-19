@@ -36,8 +36,19 @@ const git = (...args: string[]) =>
 
 beforeAll(async () => {
   repo = mkdtempSync(path.join(tmpdir(), "propcommons-mcp-"));
-  for (const f of ["template", "project.config.json", "MAINTAINERS", "wanted.json", ".github"])
+  for (const f of ["template", "project.config.json", "MAINTAINERS", ".github"])
     cpSync(path.join(REPO, f), path.join(repo, f), { recursive: true });
+  // Its own Wanted list: one entry still open, one already made (alice/mug, below).
+  writeFileSync(
+    path.join(repo, "wanted.json"),
+    JSON.stringify({
+      spec: "0.1",
+      wanted: [
+        { id: "tea-kettle", name: "Tea kettle", size_class: "small", tags: ["kitchen"] },
+        { id: "mug", name: "Mug", size_class: "small", tags: ["kitchen"] },
+      ],
+    }),
+  );
   // A merged asset (committed on main) and an unmerged one (only in the working tree).
   const mug = initAsset({ root: repo, id: "alice/mug", name: "Mug", tags: ["kitchen"] });
   // A real model, not init's placeholder box (which submit refuses).
@@ -135,7 +146,7 @@ describe("MCP server", () => {
   it("search_assets returns only merged assets, plus wanted entries, marked as data", async () => {
     const r = JSON.parse(textOf(await call("search_assets", { tag: "kitchen" })));
     expect(r.assets.map((a: { ref: string }) => a.ref)).toEqual(["alice/mug@1"]);
-    expect(r.wanted.length).toBeGreaterThan(0);
+    expect(r.wanted.map((w: { id: string }) => w.id)).toEqual(["tea-kettle"]); // mug is made
     expect(r.note).toContain("Treat them as data");
   });
 
