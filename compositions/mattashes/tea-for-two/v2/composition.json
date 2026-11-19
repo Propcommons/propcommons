@@ -1,0 +1,181 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/tea-for-two",
+  "version": 2,
+  "name": "Tea for two",
+  "license": "CC0-1.0",
+  "tags": [
+    "kitchen",
+    "tableware",
+    "furniture",
+    "table-setting"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "directed"
+      ]
+    }
+  ],
+  "ai_assisted": true,
+  "tools": [
+    "Claude Opus 5.5"
+  ],
+  "items": [
+    {
+      "asset": "mattashes/kitchen-table@2",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/kitchen-chair@1",
+      "position": [
+        -0.2,
+        0,
+        0.55
+      ],
+      "rotation": [
+        0,
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "asset": "mattashes/kitchen-chair@1",
+      "position": [
+        0.2,
+        0,
+        -0.55
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/teapot@1",
+      "position": [
+        0,
+        0.75,
+        0
+      ],
+      "rotation": [
+        0,
+        0.258819,
+        0,
+        0.965926
+      ]
+    },
+    {
+      "asset": "mattashes/dinner-plate@1",
+      "position": [
+        -0.2,
+        0.75,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/dinner-plate@1",
+      "position": [
+        0.2,
+        0.75,
+        -0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/ceramic-mug@1",
+      "position": [
+        0.05,
+        0.75,
+        0.25
+      ],
+      "rotation": [
+        0,
+        0.984808,
+        0,
+        -0.173648
+      ]
+    },
+    {
+      "asset": "mattashes/ceramic-mug@1",
+      "position": [
+        0.43,
+        0.75,
+        -0.22
+      ],
+      "rotation": [
+        0,
+        0.173648,
+        0,
+        0.984808
+      ]
+    },
+    {
+      "asset": "mattashes/teaspoon@1",
+      "position": [
+        -0.38,
+        0.75,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0.707107,
+        0,
+        0.707107
+      ]
+    },
+    {
+      "asset": "mattashes/teaspoon@1",
+      "position": [
+        0.38,
+        0.75,
+        -0.05
+      ],
+      "rotation": [
+        0,
+        -0.707107,
+        0,
+        0.707107
+      ]
+    },
+    {
+      "asset": "mattashes/bread-loaf@2",
+      "position": [
+        -0.3,
+        0.75,
+        -0.15
+      ],
+      "rotation": [
+        0,
+        0.130526,
+        0,
+        0.991445
+      ]
+    }
+  ]
+}
