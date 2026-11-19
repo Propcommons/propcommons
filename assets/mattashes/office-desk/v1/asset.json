@@ -1,0 +1,27 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/office-desk",
+  "version": 1,
+  "name": "Desk, oak and steel",
+  "license": "CC0-1.0",
+  "size_class": "large",
+  "tags": [
+    "office",
+    "furniture",
+    "desk",
+    "wood"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "directed"
+      ]
+    }
+  ],
+  "ai_assisted": true,
+  "tools": [
+    "glTF-Transform",
+    "Claude Opus 5.5"
+  ]
+}
