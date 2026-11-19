@@ -423,3 +423,28 @@ up and still pass.
   again while that isn't merged (so an agent can adjust and call again) and starts the next
   version once it is. It uses `propcommons settle` itself, so the CLI, the Studio and agents all
   place things by one rule. Publishing still goes through `submit` and the sign-off.
+
+## Improve it, and Make a prop (19 November 2026)
+
+- **Why:** the library should invite people to put their own AI to work, on a new prop or on a
+  better version of one, and whatever AI they use has to follow the spec.
+- **The site writes the prompt.** Every asset page has an "Improve it" button, and the Contribute
+  page is now "Make a prop". Both open a builder (`static/make.js`) that turns what the person types
+  into a prompt for a coding agent: get the project, follow AGENTS.md, use the MCP server or the
+  command line, look at the previews, and submit only after the person's yes. A second choice gives
+  the commands for doing it by hand in Blender. Nothing is sent anywhere; the prompt is copied.
+- **Only agents that run commands.** A plain chat window can't build, validate or submit a model,
+  so the prompt is for coding agents (Claude Code, Codex, Cursor and the like), and the page says
+  so.
+- **`improve_asset` / `propcommons improve`.** Copies the newest version of an asset (or a pinned
+  one) as the starting point, model included. For the asset's own author it is the next version;
+  for anyone else it is a new asset under their handle with `parent` set to the original, as the
+  spec's ownership rule says. The person's credit comes first and the original's credits stay,
+  since the new version is built on it. The Improve button always starts from the newest live
+  version, whichever version's page it is on.
+- **An unchanged copy is refused.** check-pr refuses a new folder whose `model.glb` is the same
+  file as its `parent`'s. A new version of one's own asset is not checked this way, since a
+  manifest-only version is allowed; validate (CLI and MCP) still notes when the model is unchanged.
+- **Better versions are linked, not swapped in.** The original's page lists improvements under
+  "Better versions"; both stay in the library as separate assets. Whether an improvement should
+  replace the original in the gallery or the Studio is left for later.

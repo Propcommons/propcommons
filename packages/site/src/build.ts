@@ -202,6 +202,7 @@ const KITS = [
   "bedroom",
   "garden",
   "office",
+  "bathroom",
   "food",
   "furniture",
 ];
@@ -222,7 +223,7 @@ function homePage(o: SiteOptions, index: Index, wanted: any): string {
     <div class="cta">
       <a class="button" href="${o.base}studio/">Build a scene</a>
       <a class="button secondary" href="#library">Browse the library</a>
-      <a class="button secondary" href="${o.base}contribute/">Add an asset</a>
+      <a class="button secondary" href="${o.base}contribute/">Make a prop</a>
     </div>
     <ul class="stats">
       <li><strong>${live.length}</strong> assets</li>
@@ -267,6 +268,7 @@ function homePage(o: SiteOptions, index: Index, wanted: any): string {
   </form>
   <ul class="grid" id="gallery">${live.map((a) => assetCard(o, a))}</ul>
   <p class="muted">So far the kit has been made with AI tools (each asset page says which, under "Made with"), through the same pull requests, checks and previews as any contribution.</p>
+  <p class="invite">Something missing, or not good enough yet? <a href="${o.base}contribute/">Make a prop</a> with your own AI, or open any asset and press <strong>Improve it</strong>.</p>
 </section>
 
 ${
@@ -293,7 +295,7 @@ ${
     (w) =>
       html`<li class="card"><h3>${w.name}</h3><p class="meta"><span class="badge">${w.size_class}</span></p><p class="muted">${w.notes}</p></li>`,
   )}</ul>
-  <p class="cta"><a class="button" href="${o.base}contribute/">Make one</a></p>
+  <p class="cta"><a class="button" href="${o.base}wanted/">Make one</a></p>
 </section>`
     : ""
 }`;
@@ -310,6 +312,28 @@ ${
 
 function snippet(id: string, code: string): Raw {
   return html`<div class="snippet"><button class="copy" type="button" data-copy="${id}">Copy</button><pre><code id="${id}">${code}</code></pre></div>`;
+}
+
+/**
+ * The prompt builder behind "Improve it" and "Make a prop" (static/make.js fills it in): what the
+ * person wants, who makes it, and the text to paste into their AI or the commands to run.
+ */
+function maker(
+  kind: "improve" | "new",
+  data: { ref?: string; name?: string; page?: string; size?: string },
+  wishLabel: string,
+  placeholder: string,
+): Raw {
+  const id = `maker-out-${kind}`;
+  return html`<div class="maker" data-kind="${kind}" data-site="${siteUrl}" data-ref="${data.ref ?? ""}" data-name="${data.name ?? ""}" data-page="${data.page ?? ""}" data-size="${data.size ?? ""}">
+  <label>${wishLabel} <textarea class="maker-text" rows="2" maxlength="600" placeholder="${placeholder}"></textarea></label>
+  <fieldset class="maker-how"><legend>Who makes it?</legend>
+    <label><input type="radio" name="how-${kind}" value="ai" checked> <span><strong>My AI</strong> <span class="muted">Claude Code, Codex, Cursor, or any AI that can run commands on your computer</span></span></label>
+    <label><input type="radio" name="how-${kind}" value="self"> <span><strong>Me, in Blender</strong> <span class="muted">the commands to start and check it</span></span></label>
+  </fieldset>
+  <p class="maker-out-label">Copy this and paste it into your AI:</p>
+  <div class="snippet"><button class="copy" type="button" data-copy="${id}">Copy</button><pre class="maker-pre"><code id="${id}" class="maker-out"></code></pre></div>
+</div>`;
 }
 
 function assetPage(o: SiteOptions, index: Index, a: IndexAsset): string {
@@ -337,6 +361,17 @@ function assetPage(o: SiteOptions, index: Index, a: IndexAsset): string {
   );
   const parent =
     typeof m.parent === "string" ? index.assets.find((b) => b.ref === m.parent) : undefined;
+  // Improvements start from the newest live version, whichever version's page this is.
+  const newest = versions.find((v) => !v.taken_down) ?? a;
+  // Other people's versions built on this asset (any version of it), newest of each.
+  const better = index.assets.filter(
+    (b) =>
+      b.latest &&
+      !b.taken_down &&
+      b.id !== a.id &&
+      typeof b.manifest?.parent === "string" &&
+      b.manifest.parent.startsWith(`${a.id}@`),
+  );
   const warnings = a.results.filter((r) => r.level !== "info");
   const url = `${siteUrl}${a.files?.model}`;
   const file = `${a.id.replace("/", "-")}-v${a.version}.glb`;
@@ -390,7 +425,8 @@ function assetPage(o: SiteOptions, index: Index, a: IndexAsset): string {
       <a class="button" href="${o.base}${a.files?.model}" download="${file}">Download .glb</a>
       <span class="muted">${fmtBytes(meas.file_bytes)}</span>
     </div>
-    <p><a class="button secondary small" href="${o.base}studio/?add=${encodeURIComponent(a.ref)}">Use it in a scene</a></p>
+    <p class="panel-actions"><a class="button secondary small" href="${o.base}studio/?add=${encodeURIComponent(a.ref)}">Use it in a scene</a> <button type="button" class="button secondary small" id="improve-open">Improve it</button></p>
+    <p class="muted improve-pitch">Think it could look better? Put your own AI to work on it: your version goes up under your name, linked from here.</p>
     ${a.files?.collision ? html`<p><a href="${o.base}${a.files.collision}" download="${a.id.replace("/", "-")}-v${a.version}-collision.glb">Collision shapes (.glb)</a></p>` : ""}
     <dl class="facts">
       <dt>Size</dt><dd>${dimensions(meas.bounds_m)}</dd>
@@ -418,6 +454,8 @@ function assetPage(o: SiteOptions, index: Index, a: IndexAsset): string {
       ${m.wikidata ? html`<dt>Wikidata</dt><dd>${safeLink(`https://www.wikidata.org/wiki/${m.wikidata}`, m.wikidata)}</dd>` : ""}
     </dl>
 
+    ${better.length ? html`<h2>Better versions</h2><ul class="plain-list">${better.map((b) => html`<li><a href="${o.base}${b.path}/">${b.manifest?.name}</a> <span class="muted">by ${b.credits[0]?.github ?? b.credits[0]?.name ?? b.id.split("/")[0]}</span></li>`)}</ul>` : ""}
+
     <h2>Used in</h2>
     ${usedIn.length ? html`<ul class="plain-list">${usedIn.map((c) => html`<li><a href="${o.base}${c.path}/">${c.manifest?.name}</a></li>`)}</ul>` : html`<p class="muted">No compositions yet.</p>`}
 
@@ -425,7 +463,16 @@ function assetPage(o: SiteOptions, index: Index, a: IndexAsset): string {
     ${versionList}
     <p class="hash">SHA-256 <code>${a.sha256}</code></p>
   </aside>
-</div>`;
+</div>
+<dialog id="improve-dialog" class="dialog wide">
+  <form method="dialog">
+    <h2>Make a better ${m.name}</h2>
+    <p class="muted">Your AI starts from this model and follows the same rules, so the new one still fits every scene. It goes up under your GitHub name, as CC0, and this page links to it.</p>
+    ${maker("improve", { ref: newest.ref, name: m.name, page: `${siteUrl}${newest.path}/`, size: dimensions(newest.measured?.bounds_m) }, "What should be better? (optional)", "More realistic wood, a rounder handle, a worn look…")}
+    <p class="muted small-print">Making the file needs an AI that can run commands, not a plain chat window. New to this? <a href="${o.base}contribute/">Contribute</a> explains it.</p>
+    <div class="dialog-actions"><button value="close">Close</button></div>
+  </form>
+</dialog>`;
   return page({
     base: o.base,
     title: `${m.name} · Prop Commons`,
@@ -433,7 +480,7 @@ function assetPage(o: SiteOptions, index: Index, a: IndexAsset): string {
     body,
     active: "gallery",
     modelViewer: true,
-    scripts: [{ src: "static/copy.js" }],
+    scripts: [{ src: "static/copy.js" }, { src: "static/make.js" }],
   });
 }
 
@@ -509,7 +556,7 @@ function studioPage(o: SiteOptions, index: Index, repo: string): string {
       <p class="muted lib-count" id="lib-count">Loading the library…</p>
     </div>
     <ul class="lib-grid" id="library"></ul>
-    <p class="lib-empty muted" id="lib-empty" hidden>Nothing matches. <a href="https://github.com/${repo}/issues/new/choose">Ask for it</a> and someone can make it.</p>
+    <p class="lib-empty muted" id="lib-empty" hidden>Nothing matches. <a href="${o.base}contribute/#make">Make it</a> with your own AI, or <a href="https://github.com/${repo}/issues/new/choose">ask for it</a> and someone can.</p>
   </aside>
   <section class="studio-stage" aria-label="Scene">
     <div class="toolbar" role="toolbar" aria-label="Scene tools">
@@ -611,7 +658,7 @@ function wantedPage(o: SiteOptions, wanted: any, repo: string): string {
       title: "Wanted · Prop Commons",
       body: html`<h1>Wanted</h1>
 <p>Everything on the list has been made. Nothing is waiting for a maker right now.</p>
-<p>You can still add something the kit doesn't have yet: check <a href="${o.base}">the library</a> so you don't duplicate an asset, then follow <a href="${o.base}contribute/">Contribute</a>. To suggest something for the list, use the <a href="https://github.com/${repo}/issues/new/choose">Request an asset</a> form.</p>`,
+<p>You can still add something the library doesn't have yet: <a href="${o.base}contribute/">make a prop</a> with your own AI, or open any asset and press <strong>Improve it</strong> to make a better one. To suggest something for the list, use the <a href="https://github.com/${repo}/issues/new/choose">Request an asset</a> form.</p>`,
       active: "wanted",
     });
   const body = html`<h1>Wanted</h1>
@@ -627,7 +674,7 @@ function wantedPage(o: SiteOptions, wanted: any, repo: string): string {
   <h2>${w.name}</h2>
   <p class="meta"><code>your-handle/${w.id}</code> <span class="badge">${w.size_class}</span>${(w.tags ?? []).map((t: string) => html` <span class="tag">${t}</span>`)}</p>
   <p>${w.notes}</p>
-  <p class="actions"><a class="button" href="${claim(w)}">Claim it</a> <a href="${search(w)}">See who's on it</a></p>
+  <p class="actions"><a class="button" href="${o.base}contribute/?${String(new URLSearchParams({ make: `${w.name}${w.notes ? `: ${w.notes}` : ""} (on the Wanted list as ${w.id})` }))}#make">Make it with your AI</a> <a class="button secondary" href="${claim(w)}">Claim it</a> <a href="${search(w)}">See who's on it</a></p>
 </li>`,
   )}</ul>`;
   return page({ base: o.base, title: "Wanted · Prop Commons", body, active: "wanted" });
@@ -635,26 +682,55 @@ function wantedPage(o: SiteOptions, wanted: any, repo: string): string {
 
 function contributePage(o: SiteOptions, repo: string): string {
   const gh = `https://github.com/${repo}`;
-  const body = html`<h1>Add an asset</h1>
-<p>Anyone can add a prop. You make one object at real-world size, the validator checks it and tells you exactly what to fix, and a maintainer reviews the preview images and merges it. Everything is released as CC0, with your name credited.</p>
-<p><a class="button" href="${gh}/blob/main/CONTRIBUTING.md">Read the step-by-step guide</a></p>
-<h2>The steps</h2>
+  const body = html`<h1>Make a prop</h1>
+<p class="lede">Anyone can add to the library, and your AI can do most of the work. Say what you want; you get a prompt that tells your AI exactly how this project works, so what it makes fits next to everything else. It goes up as CC0 with your name on it.</p>
+
+<section class="make-box" id="make" aria-labelledby="make-title">
+  <h2 id="make-title">Make something new</h2>
+  ${maker("new", {}, "What do you want to make?", "A cast-iron Dutch oven with a lid, about 30 cm across")}
+</section>
+
+<section aria-labelledby="improve-title">
+  <h2 id="improve-title">Or make one better</h2>
+  <p>Every asset page has an <strong>Improve it</strong> button. Your AI starts from that model, keeps its size, and your version is linked from the original. Many of the current props were made quickly, so there's plenty to improve: <a href="${o.base}#library">browse the library</a>.</p>
+</section>
+
+<section aria-labelledby="need-title">
+  <h2 id="need-title">What you need</h2>
+  <ul>
+    <li><strong>An AI that can run commands on your computer</strong>: Claude Code, Codex, Cursor and similar coding agents. A plain chat window can't build and check the file. The prompt has the agent set everything else up.</li>
+    <li><strong>A GitHub account</strong>, which is where the library lives. Your AI will help you sign in with the GitHub CLI.</li>
+    <li><strong>Blender, if you like</strong>. Agents can build models in code without it, but an artist with Blender gets the best results.</li>
+  </ul>
+  <p>Nothing is published until you've seen the pictures and said yes. Every prop is checked automatically against the <a href="${o.base}spec/0.1/">spec</a> and reviewed before it's merged.</p>
+</section>
+
+<details class="by-hand"><summary>Doing it all by hand</summary>
 <ol class="steps">
   <li><strong>Set up once</strong>: a GitHub account, git, Node.js 26.13 or later, and the GitHub CLI signed in with <code>gh auth login</code>. Tell git your name and GitHub noreply email with <code>git config --global user.name</code> and <code>user.email</code>. Blender if you model in Blender.</li>
   <li><strong>Get the project</strong>: <code>gh repo fork ${repo} --clone</code>, then <code>npm ci</code> in the folder, and <code>npx playwright install --only-shell chromium</code> once for preview images.</li>
-  <li><strong>Pick something</strong> from the <a href="${o.base}wanted/">Wanted list</a> and claim it, or anything the library doesn't have yet.</li>
-  <li><strong>Start the folder</strong>: <code>npx propcommons init your-handle/your-asset</code>.</li>
+  <li><strong>Pick something</strong> from the <a href="${o.base}wanted/">Wanted list</a>, anything the library doesn't have yet, or an asset to improve.</li>
+  <li><strong>Start the folder</strong>: <code>npx propcommons init your-handle/your-asset</code>, or <code>npx propcommons improve author/asset</code> to start from an existing one.</li>
   <li><strong>Make the model</strong> in metres, standing on the ground, with image textures or plain colours. From Blender, the export script does the fiddly parts.</li>
   <li><strong>Check it</strong>: <code>npx propcommons validate</code> until it says PASS, then <code>npx propcommons preview</code> and look at the images. PASS means the file is well-formed; the images show whether it looks right.</li>
   <li><strong>Open a pull request</strong> that adds only your folder, and tick the sign-off yourself.</li>
 </ol>
-<h2>With a coding agent</h2>
-<p>Agents can do most of this through the project's MCP server, using the same validator. The agent shows you the sign-off statement before it submits; your yes is the sign-off. Setup is in <a href="${gh}/blob/main/AGENTS.md">AGENTS.md</a>.</p>
+<p><a href="${gh}/blob/main/CONTRIBUTING.md">The step-by-step guide</a> has every detail; agents read <a href="${gh}/blob/main/AGENTS.md">AGENTS.md</a>.</p>
+</details>
+
 <h2>The rules</h2>
 <p>The <a href="${o.base}spec/0.1/">asset spec</a> has every rule; the validator names them by ID. Read the <a href="${gh}/blob/main/CONTENT_POLICY.md">content policy</a> too: no real brands, logos, recognisable characters or likenesses of real people, and every part must be yours to release.</p>
 <h2>Stuck?</h2>
-<p>Open an issue with <a href="${gh}/issues/new/choose">Report a problem</a>. If the guide confused you, that's worth reporting too.</p>`;
-  return page({ base: o.base, title: "Contribute · Prop Commons", body, active: "contribute" });
+<p>Open an issue with <a href="${gh}/issues/new/choose">Report a problem</a>. If anything here confused you, that's worth reporting too.</p>`;
+  return page({
+    base: o.base,
+    title: "Make a prop · Prop Commons",
+    description:
+      "Make a new game prop for Prop Commons, or a better version of one, with your own AI.",
+    body,
+    active: "contribute",
+    scripts: [{ src: "static/copy.js" }, { src: "static/make.js" }],
+  });
 }
 
 function aboutPage(o: SiteOptions, config: Config): string {
@@ -664,7 +740,7 @@ function aboutPage(o: SiteOptions, config: Config): string {
 <h2>Use the assets</h2>
 <p>Everything is CC0: use it for anything, commercial or not, with no credit required. Credit is recorded anyway, on each asset page and in <a href="${o.base}index.json">index.json</a>.</p>
 <h2>Contribute</h2>
-<p>Add an asset by pull request on <a href="${repo}">GitHub</a>. The validator checks it automatically; a maintainer reviews the previews and merges. Start at <a href="${o.base}contribute/">Contribute</a>.</p>
+<p>Add an asset by pull request on <a href="${repo}">GitHub</a>. The validator checks it automatically; a maintainer reviews the previews and merges. Start at <a href="${o.base}contribute/">Make a prop</a>, which writes a prompt for your own AI.</p>
 <h2>For agents and tools</h2>
 <p><a href="${o.base}llms.txt">llms.txt</a> explains the layout and <a href="${o.base}index.json">index.json</a> lists every asset with its measured data. The schemas and rules are under <a href="${o.base}spec/0.1/">spec/0.1/</a>.</p>`;
   return page({ base: o.base, title: "About · Prop Commons", body, active: "about" });
@@ -707,6 +783,7 @@ function llmsTxt(_o: SiteOptions, config: Config, index: Index): string {
 
 - Spec: ${site}/spec/0.1/SPEC.md (rules with stable IDs), schemas: ${site}/spec/0.1/asset.schema.json and composition.schema.json, rule hints: ${site}/spec/0.1/rules.json, limits: ${site}/spec/0.1/budgets.json.
 - Workflow: fork and clone ${repo} (\`gh repo fork ${config.github.owner}/${config.github.repo} --clone\`), run npm ci, then \`npx propcommons init <your-handle>/<slug>\`, replace model.glb, run \`npx propcommons validate <folder> --json\` until it passes, and open a pull request. A person confirms the sign-off; tick it only after their explicit yes. If an AI made or changed any part of the asset, set ai_assisted to true and list it in tools. AGENTS.md in the repository has an MCP server configuration with the same tools.
+- Improve: \`npx propcommons improve <author>/<slug>\` (or the MCP tool improve_asset) starts a better version of an existing asset from a copy of it; under someone else's handle it becomes a new asset whose parent names the original.
 - Wanted: ${site}/wanted/ lists assets the kit needs.
 `;
 }

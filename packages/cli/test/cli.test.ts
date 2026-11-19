@@ -179,4 +179,68 @@ describe("command line", () => {
     expect(ok.code, ok.stdout + ok.stderr).toBe(0);
     expect(ok.stdout).toContain("Pull request: PASS (assets)");
   });
+
+  it("improve starts a better version, and check-pr refuses it until the model changes", () => {
+    const work = mkdtempSync(path.join(tmpdir(), "propcommons-improve-"));
+    const g = (...a: string[]) =>
+      execFileSync("git", ["-c", "user.name=T", "-c", "user.email=t@example.invalid", ...a], {
+        cwd: work,
+      });
+    for (const f of ["template", "project.config.json", "MAINTAINERS"])
+      cpSync(path.join(REPO, f), path.join(work, f), { recursive: true });
+    cpSync(
+      path.join(REPO, "assets/mattashes/lemon/v1"),
+      path.join(work, "assets/mattashes/lemon/v1"),
+      {
+        recursive: true,
+      },
+    );
+    g("init", "-q", "-b", "main");
+    g("add", "-A");
+    g("commit", "-q", "-m", "base");
+    g("checkout", "-q", "-b", "better-lemon");
+    const made = cli(
+      [
+        "improve",
+        "mattashes/lemon",
+        "--as",
+        "dana",
+        "--ai-assisted",
+        "--tools",
+        "Claude Opus 5.5",
+        "--json",
+      ],
+      work,
+    );
+    expect(made.code, made.stderr).toBe(0);
+    expect(JSON.parse(made.stdout)).toMatchObject({
+      path: "assets/dana/lemon/v1",
+      from: "mattashes/lemon@1",
+    });
+    const manifest = JSON.parse(
+      readFileSync(path.join(work, "assets/dana/lemon/v1/asset.json"), "utf8"),
+    );
+    expect(manifest).toMatchObject({ id: "dana/lemon", version: 1, parent: "mattashes/lemon@1" });
+    const v = cli(["validate", "assets/dana/lemon/v1"], work);
+    expect(v.code).toBe(0);
+    expect(v.stdout).toContain("same file as mattashes/lemon@1");
+    g("add", "assets");
+    g("commit", "-q", "-m", "Add dana/lemon@1");
+    const copy = cli(["check-pr", "--against", "main"], work);
+    expect(copy.code).toBe(1);
+    expect(copy.stdout).toContain("has not changed");
+    cpSync(
+      path.join(REPO, "assets/mattashes/orange/v1/model.glb"),
+      path.join(work, "assets/dana/lemon/v1/model.glb"),
+    );
+    g("commit", "-q", "-am", "Better model");
+    const ok = cli(["check-pr", "--against", "main"], work);
+    expect(ok.code, ok.stdout + ok.stderr).toBe(0);
+    // The author's own asset: the next version of it.
+    const own = cli(
+      ["improve", "dana/lemon", "--as", "dana", "--tools", "Blender", "--json"],
+      work,
+    );
+    expect(JSON.parse(own.stdout).path).toBe("assets/dana/lemon/v2");
+  });
 });

@@ -4,7 +4,7 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { initAsset } from "@propcommons/validator";
+import { improveAsset, initAsset } from "@propcommons/validator";
 import { chromium } from "playwright";
 import { beforeAll, describe, expect, it } from "vitest";
 import { buildSite } from "../src/index.ts";
@@ -35,6 +35,14 @@ beforeAll(async () => {
   cpSync(path.join(repo, "assets/alice/mug/v1"), v2, { recursive: true });
   const m2 = JSON.parse(readFileSync(path.join(v2, "asset.json"), "utf8"));
   writeFileSync(path.join(v2, "asset.json"), JSON.stringify({ ...m2, version: 2 }));
+  // Someone else's better version of the mug, which its page should link to.
+  improveAsset({
+    root: repo,
+    from: "alice/mug",
+    author: "bob",
+    aiAssisted: true,
+    tools: ["Claude"],
+  });
   const comp = path.join(repo, "compositions/alice/pair/v1");
   mkdirSync(comp, { recursive: true });
   writeFileSync(
@@ -76,6 +84,7 @@ describe("site", () => {
     expect(index.assets.map((a: { ref: string }) => a.ref)).toEqual([
       "alice/mug@1",
       "alice/mug@2",
+      "bob/mug@1",
       "mallory/box@1",
     ]);
     expect(index.compositions.map((c: { ref: string }) => c.ref)).toEqual(["alice/pair@1"]);
@@ -110,6 +119,22 @@ describe("site", () => {
     expect(g).toContain('href="/propcommons/assets/alice/mug/v2/"');
     expect(g).not.toContain('href="/propcommons/assets/alice/mug/v1/"');
     expect(g).toContain('href="/propcommons/assets/mallory/box/v1/"');
+  });
+
+  it("asset pages offer Improve, starting from the newest version, and link better versions", () => {
+    for (const v of ["v1", "v2"]) {
+      const p = read(`assets/alice/mug/${v}/index.html`);
+      expect(p).toContain('id="improve-open"');
+      expect(p).toContain('data-ref="alice/mug@2"');
+      expect(p).toContain("static/make.js");
+    }
+    const v2 = read("assets/alice/mug/v2/index.html");
+    expect(v2).toContain("Better versions");
+    expect(v2).toContain('href="/propcommons/assets/bob/mug/v1/"');
+    expect(read("assets/bob/mug/v1/index.html")).toContain("Derived from");
+    const make = read("contribute/index.html");
+    expect(make).toContain('class="maker" data-kind="new"');
+    expect(existsSync(path.join(out, "static/make.js"))).toBe(true);
   });
 
   it("the compositions page lists the composition", () => {
@@ -221,7 +246,7 @@ describe("site", () => {
       );
       expect(ys.map((y) => Math.round(y * 1000) + 0)).toEqual([0, 100]);
       // The library lists the latest versions, and a published scene opens.
-      expect(await page.locator(".lib-item").count()).toBe(2);
+      expect(await page.locator(".lib-item").count()).toBe(3);
       await page.evaluate(() => (window as unknown as StudioWindow).studio.open("alice/pair"));
       expect(
         await page.evaluate(() => (window as unknown as StudioWindow).studio.items.length),
