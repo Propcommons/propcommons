@@ -1,0 +1,27 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/table-lamp",
+  "version": 1,
+  "name": "Table lamp",
+  "license": "CC0-1.0",
+  "size_class": "medium",
+  "tags": [
+    "bedroom",
+    "living-room",
+    "lamp",
+    "lighting"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "directed"
+      ]
+    }
+  ],
+  "ai_assisted": true,
+  "tools": [
+    "glTF-Transform",
+    "Claude Opus 5.5"
+  ]
+}
