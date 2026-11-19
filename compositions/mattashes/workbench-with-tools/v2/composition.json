@@ -1,0 +1,124 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/workbench-with-tools",
+  "version": 2,
+  "name": "Workbench with tools",
+  "license": "CC0-1.0",
+  "tags": [
+    "workshop",
+    "tool",
+    "furniture"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "directed"
+      ]
+    }
+  ],
+  "ai_assisted": true,
+  "tools": [
+    "Claude Opus 5.5"
+  ],
+  "items": [
+    {
+      "asset": "mattashes/workbench@2",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/claw-hammer@1",
+      "position": [
+        -0.22,
+        0.9,
+        0.12
+      ],
+      "rotation": [
+        0,
+        0.173648,
+        0,
+        0.984808
+      ]
+    },
+    {
+      "asset": "mattashes/screwdriver@1",
+      "position": [
+        0.12,
+        0.9,
+        0.17
+      ],
+      "rotation": [
+        0,
+        -0.104528,
+        0,
+        0.994522
+      ]
+    },
+    {
+      "asset": "mattashes/tape-measure@1",
+      "position": [
+        0.42,
+        0.9,
+        -0.02
+      ],
+      "rotation": [
+        0,
+        -0.258819,
+        0,
+        0.965926
+      ]
+    },
+    {
+      "asset": "mattashes/hand-saw@1",
+      "position": [
+        0.02,
+        0.9,
+        -0.15
+      ],
+      "rotation": [
+        0,
+        0.034899,
+        0,
+        0.999391
+      ]
+    },
+    {
+      "asset": "mattashes/toolbox@1",
+      "position": [
+        0.32,
+        0.22,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/pine-plank@1",
+      "position": [
+        -0.2,
+        0.22,
+        -0.12
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    }
+  ]
+}
