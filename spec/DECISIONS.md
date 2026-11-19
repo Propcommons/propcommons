@@ -340,3 +340,16 @@ up and still pass.
   and 88% in the kit view. Testers couldn't judge a spoon's 3-pixel details before.
 - **MCP tool inputs are strict.** An unknown argument name (`query` for `text`) is now an error
   that names it; it used to be dropped silently, returning unfiltered results.
+
+## Testing period: the maintainer works alone (19 November 2026)
+
+- **The v0 gate is run by the maintainer and agents, not three outside contributors.** The project
+  goes to outside people only once it is an app; until then every contribution is the maintainer's
+  (mattashes) with an AI agent doing the making.
+- **Standing sign-off.** For assets and compositions an agent makes under `mattashes` during
+  testing, the maintainer has given a standing yes to the sign-off statement, so the agent ticks the
+  box and merges once the checks pass. The rule in AGENTS.md (a person's explicit yes for each
+  contribution) is unchanged for everyone else.
+- **The sign-off wording's legal review is deferred** until outside people are invited.
+- **No extra GitHub accounts.** The fork pull request path is tested from the maintainer's own
+  fork instead.
