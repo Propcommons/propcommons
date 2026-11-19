@@ -1,0 +1,26 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/laptop",
+  "version": 1,
+  "name": "Laptop, open",
+  "license": "CC0-1.0",
+  "size_class": "medium",
+  "tags": [
+    "office",
+    "computer",
+    "electronics"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "directed"
+      ]
+    }
+  ],
+  "ai_assisted": true,
+  "tools": [
+    "glTF-Transform",
+    "Claude Opus 5.5"
+  ]
+}
