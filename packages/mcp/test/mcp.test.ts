@@ -210,14 +210,28 @@ describe("submit", () => {
     const seen: string[] = [];
     const c = await connect((cmd, args) => {
       seen.push(`${cmd} ${args.slice(0, 2).join(" ")}`);
+      if (cmd === "gh" && args[0] === "api" && args.includes("-X")) {
+        expect(args).toContain("repos/propcommons/propcommons/forks");
+        return "alice/propcommons-1\n"; // she already had a repository called propcommons
+      }
       if (cmd === "gh" && args[0] === "api") return "alice\n";
+      if (cmd === "git" && args.includes("push"))
+        expect(args).toContain("https://github.com/alice/propcommons-1.git");
+      if (cmd === "gh" && args[1] === "create") expect(args).toContain("alice:add-alice-mug-v1");
       if (cmd === "git" && args[0] === "config")
         return args[2] === "user.name" ? "Alice\n" : "alice@example.invalid\n";
+      if (cmd === "gh" && args[0] === "pr" && args[1] === "list") return "\n";
       if (cmd === "gh" && args[0] === "pr")
         return "https://github.com/propcommons/propcommons/pull/1\n";
-      if (cmd === "gh" && args[0] === "repo" && args[1] === "clone") {
-        execFileSync("git", ["init", "--quiet", args[3] as string]);
-        writeFileSync(path.join(args[3] as string, "README"), "x");
+      if (cmd === "git" && args[0] === "write-tree") return `${"a".repeat(40)}\n`;
+      if (cmd === "git" && args.includes("commit-tree")) return `${"c".repeat(40)}\n`;
+      if (cmd === "git" && args.includes("push"))
+        expect(args).toContain(`+${"c".repeat(40)}:refs/heads/add-alice-mug-v1`);
+      if (cmd === "git" && args[0] === "clone") {
+        expect(args).toContain("--filter=blob:none");
+        const dest = args[args.length - 1] as string;
+        execFileSync("git", ["init", "--quiet", dest]);
+        writeFileSync(path.join(dest, "README"), "x");
       }
       return "";
     });
@@ -230,15 +244,49 @@ describe("submit", () => {
       "gh api user",
       "git config --get",
       "git config --get",
-      "gh repo fork",
-      "gh repo clone",
-      "git checkout -b",
+      "gh api -X",
+      "git clone --quiet",
+      "git read-tree HEAD",
+      "gh repo sync",
       `git --work-tree ${repo}`,
+      "git write-tree --missing-ok",
       "git -c user.name=Alice",
       "git -c credential.helper=",
+      "gh pr list",
       "gh pr create",
     ]);
   });
+  it("submitting again reports the pull request that is already open", async () => {
+    const c = await connect((cmd, args) => {
+      if (cmd === "gh" && args[0] === "api" && args.includes("-X")) return "alice/propcommons\n";
+      if (cmd === "gh" && args[0] === "api") return "alice\n";
+      if (cmd === "git" && args[0] === "config") return "x\n";
+      if (cmd === "git" && (args[0] === "write-tree" || args.includes("commit-tree")))
+        return `${"b".repeat(40)}\n`;
+      if (cmd === "gh" && args[0] === "pr" && args[1] === "list")
+        return "https://github.com/propcommons/propcommons/pull/7\n";
+      if (cmd === "gh" && args[0] === "pr") throw new Error("must not create a second one");
+      return "";
+    });
+    const r = await call("submit", { folder: "assets/alice/mug/v1", signoff_confirmed: true }, c);
+    expect(JSON.parse(textOf(r)).pull_request).toBe(
+      "https://github.com/propcommons/propcommons/pull/7",
+    );
+  });
+
+  it("says which step failed, without blaming the gh login", async () => {
+    const c = await connect((cmd, args) => {
+      if (cmd === "gh" && args[0] === "api" && args.includes("-X")) throw new Error("HTTP 403");
+      if (cmd === "gh" && args[0] === "api") return "alice\n";
+      if (cmd === "git" && args[0] === "config") return "x\n";
+      return "";
+    });
+    const r = await call("submit", { folder: "assets/alice/mug/v1", signoff_confirmed: true }, c);
+    expect(r.isError).toBe(true);
+    expect(textOf(r)).toContain("Submitting failed while forking the repository: HTTP 403");
+    expect(textOf(r)).not.toContain("not available or not signed in");
+  });
+
   it("refuses a folder under another person's handle", async () => {
     const c = await connect((cmd, args) => (cmd === "gh" && args[0] === "api" ? "mallory\n" : ""));
     const r = await call("submit", { folder: "assets/alice/mug/v1", signoff_confirmed: true }, c);

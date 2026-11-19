@@ -34,6 +34,8 @@ const text = (s: string, isError = false) => ({
   isError,
 });
 const json = (v: unknown, isError = false) => text(JSON.stringify(v, null, 2), isError);
+/** Blocks for `ms` milliseconds (the submit steps are synchronous commands anyway). */
+const sleep = (ms: number) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 
 function git(root: string, args: string[]): string | null {
   try {
@@ -330,20 +332,21 @@ export function createServer(o: ServerOptions): McpServer {
       const upstream = `${config.github.owner}/${config.github.repo}`;
       const branch = `add-${vp.author}-${vp.slug}-v${vp.version}`;
       const title = `Add ${vp.author}/${vp.slug}@${vp.version}`;
-      const manual = [
-        "The GitHub CLI (gh) is not available or not signed in. Either install it from https://cli.github.com and run `gh auth login`, then call submit again, or follow steps 6 and 7 of CONTRIBUTING.md:",
+      const steps = [
         `1. git checkout -b ${branch}`,
         `2. git add ${vp.rel}`,
         `3. git commit -m "${title}"`,
         `4. git push -u origin ${branch}   (origin must be your fork of ${upstream})`,
         `5. Open the pull request on GitHub against ${upstream}, main. In the sign-off line at the bottom, change "- [ ]" to "- [x]" if the statement is true.`,
       ].join("\n");
+      const manual = `The GitHub CLI (gh) is not available or not signed in. Either install it from https://cli.github.com and run \`gh auth login\`, then call submit again, or follow steps 6 and 7 of CONTRIBUTING.md:\n${steps}`;
       try {
         run("gh", ["auth", "status"], root);
       } catch {
         return text(manual);
       }
       const work = mkdtempSync(path.join(tmpdir(), "propcommons-submit-"));
+      let step = "checking the GitHub login";
       try {
         const login = run("gh", ["api", "user", "--jq", ".login"], root).trim();
         if (login.toLowerCase() !== vp.author.toLowerCase())
@@ -367,31 +370,90 @@ export function createServer(o: ServerOptions): McpServer {
             'Refused: git doesn\'t know the contributor\'s name and email yet. Ask them for both (the email should be their GitHub noreply address from https://github.com/settings/emails), then run git config --global user.name "Their Name" and git config --global user.email "their-noreply-address", and call submit again.',
             true,
           );
-        run("gh", ["repo", "fork", upstream, "--clone=false", "--remote=false"], root);
-        // A fresh shallow clone of upstream main, so the commit holds only this folder.
-        run("gh", ["repo", "clone", upstream, work, "--", "--depth=1", "--branch=main"], root);
-        run("git", ["checkout", "-b", branch], work);
-        // Stage the folder from the contributor's working tree into the clean clone's index.
-        run("git", ["--work-tree", root, "add", "--", vp.rel], work);
-        run(
-          "git",
-          ["-c", `user.name=${name}`, "-c", `user.email=${email}`, "commit", "-m", title],
-          work,
-        );
-        // Push with gh's credentials for this one command, without changing the user's git config.
+        // Fork, or find the existing fork. The API answers with the fork's full name either way;
+        // it differs from the upstream's name when the contributor already has a repository
+        // called that.
+        step = "forking the repository";
+        const fork = run(
+          "gh",
+          ["api", "-X", "POST", `repos/${upstream}/forks`, "--jq", ".full_name"],
+          root,
+        ).trim();
+        // A fresh clone of upstream main without file contents (they aren't needed: the commit
+        // only adds this folder), so it takes a second however big the library gets. The index
+        // is filled from main's tree, then the folder is staged on top.
+        step = "cloning the main project";
         run(
           "git",
           [
+            "clone",
+            "--quiet",
+            "--depth=1",
+            "--branch=main",
+            "--filter=blob:none",
+            "--no-checkout",
+            `https://github.com/${upstream}.git`,
+            work,
+          ],
+          root,
+        );
+        run("git", ["read-tree", "HEAD"], work);
+        // Bring the fork's main up to date, so the push only has to send the new files.
+        try {
+          run("gh", ["repo", "sync", fork, "--branch", "main"], root);
+        } catch {
+          // A fork whose main has diverged still works; the push just sends more.
+        }
+        step = "committing the folder";
+        // Stage the folder from the contributor's working tree into the clean clone's index.
+        run("git", ["--work-tree", root, "add", "--", vp.rel], work);
+        // Commit with git's low-level commands: \`git commit\` would download every file in the
+        // library to work out the status first (over a minute), these need none of them.
+        const tree = run("git", ["write-tree", "--missing-ok"], work).trim();
+        const commit = run(
+          "git",
+          [
             "-c",
-            "credential.helper=",
+            `user.name=${name}`,
             "-c",
-            "credential.helper=!gh auth git-credential",
-            "push",
-            `https://github.com/${login}/${config.github.repo}.git`,
-            `HEAD:refs/heads/${branch}`,
+            `user.email=${email}`,
+            "commit-tree",
+            tree,
+            "-p",
+            "HEAD",
+            "-m",
+            title,
           ],
           work,
-        );
+        ).trim();
+        if (!/^[0-9a-f]{40,64}$/.test(commit)) throw new Error(`git commit-tree gave "${commit}"`);
+        // Push with gh's credentials for this one command, without changing the user's git config.
+        // A fork made a moment ago can take a few seconds to accept pushes, so try a few times.
+        // The branch belongs to this asset version, so submitting again replaces it (and updates
+        // an open pull request).
+        step = `pushing to ${fork}`;
+        for (let attempt = 1; ; attempt++) {
+          try {
+            run(
+              "git",
+              [
+                "-c",
+                "credential.helper=",
+                "-c",
+                "credential.helper=!gh auth git-credential",
+                "push",
+                `https://github.com/${fork}.git`,
+                `+${commit}:refs/heads/${branch}`,
+              ],
+              work,
+            );
+            break;
+          } catch (e) {
+            if (attempt >= 6) throw e;
+            sleep(5000);
+          }
+        }
+        step = "opening the pull request";
         const template = readFileSync(path.join(root, ".github/PULL_REQUEST_TEMPLATE.md"), "utf8");
         const manifest = JSON.parse(
           readFileSync(
@@ -404,6 +466,16 @@ export function createServer(o: ServerOptions): McpServer {
           .replace(/^-\s*$/m, `- ${vp.author}/${vp.slug}@${vp.version}: ${manifest.name ?? ""}`)
           .replace(/(## How it was made\s*\n\s*\n)(<!--[\s\S]*?-->)/, `$1$2\n\n${made}`)
           .replace(`- [ ] ${SIGNOFF_STATEMENT}`, `- [x] ${SIGNOFF_STATEMENT}`);
+        const open = run(
+          "gh",
+          ["pr", "list", "--repo", upstream, "--head", branch, "--json", "url", "--jq", ".[0].url"],
+          work,
+        ).trim();
+        if (open)
+          return json({
+            pull_request: open,
+            note: "This pull request was already open; it now has the folder as it is now.",
+          });
         const url = run(
           "gh",
           [
@@ -412,7 +484,7 @@ export function createServer(o: ServerOptions): McpServer {
             "--repo",
             upstream,
             "--head",
-            `${login}:${branch}`,
+            `${fork.split("/")[0]}:${branch}`,
             "--base",
             "main",
             "--title",
@@ -428,7 +500,10 @@ export function createServer(o: ServerOptions): McpServer {
         });
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
-        return text(`Submitting failed: ${msg}\n\n${manual}`, true);
+        return text(
+          `Submitting failed while ${step}: ${msg}\n\nNothing was changed in ${upstream}. Call submit again once the problem is fixed, or open the pull request by hand (steps 6 and 7 of CONTRIBUTING.md):\n${steps}`,
+          true,
+        );
       } finally {
         rmSync(work, { recursive: true, force: true });
       }

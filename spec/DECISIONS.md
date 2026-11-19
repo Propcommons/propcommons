@@ -353,3 +353,23 @@ up and still pass.
 - **The sign-off wording's legal review is deferred** until outside people are invited.
 - **No extra GitHub accounts.** The fork pull request path is tested from the maintainer's own
   fork instead.
+
+## The fork path, tested for real (19 November 2026)
+
+- **The MCP `submit` tool was tested end to end from the maintainer's own fork** (PR #8, the
+  teaspoon). It found three faults, now fixed:
+  - `gh repo fork <repo> --remote=false` is refused by current gh ("the --remote flag is
+    unsupported when a repository argument is provided"), so `submit` failed for everyone. It
+    now forks through the API (`POST repos/{upstream}/forks`), which also returns the fork's real
+    name (it differs when the contributor already has a repository called `propcommons`).
+  - It took over a minute, and MCP clients commonly time out at 60 s. The shallow clone downloaded
+    every model in the library, and `git commit` downloaded them again to work out the status.
+    It now clones without file contents, fills the index from main's tree, stages the one folder
+    and commits with `write-tree` and `commit-tree`: about 6 s however big the library is.
+  - Any failure was reported as "gh is not available or not signed in". It now names the step
+    that failed.
+- **Submitting the same folder again updates the open pull request** instead of failing: the
+  branch belongs to that asset version, so it is force-pushed and the existing PR is reported.
+- **CI browser install**: GitHub's Ubuntu images already have Chrome's system libraries, so CI
+  downloads only the browser and checks it starts; apt runs only if it doesn't (stalled apt
+  mirrors had hung three runs, and a timed-out attempt left apt's lock held).
