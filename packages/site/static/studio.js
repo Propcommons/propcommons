@@ -261,7 +261,7 @@ function makeObject(ref, template) {
 }
 
 async function addItem(ref, position, quaternion, scale = 1, id) {
-  const { template } = await loadModel(ref);
+  const { template, samples } = await loadModel(ref);
   const obj = makeObject(ref, template);
   obj.position.fromArray(position);
   if (quaternion) obj.quaternion.fromArray(quaternion);
@@ -269,7 +269,7 @@ async function addItem(ref, position, quaternion, scale = 1, id) {
   // Raycasts use world matrices, which otherwise update only when a frame is drawn: a prop
   // placed right after this one (building a plan) must already see it where it is.
   obj.updateMatrixWorld(true);
-  const it = { id: id ?? nextId++, ref, obj };
+  const it = { id: id ?? nextId++, ref, obj, samples };
   itemOf.set(obj, it);
   world.add(obj);
   items.push(it);
@@ -299,9 +299,13 @@ function select(it) {
 const raycaster = new THREE.Raycaster();
 const DOWN = new THREE.Vector3(0, -1, 0);
 
+/** `exclude` is one item, a Set of items, or null. */
+const others = (exclude) =>
+  items.filter((it) => (exclude instanceof Set ? !exclude.has(it) : it !== exclude));
+
 /** The height an item rests at when lowered at (x, z) from `start`. */
 function restHeight(samples, quaternion, scale, x, z, start, exclude) {
-  const targets = items.filter((it) => it !== exclude).map((it) => it.obj);
+  const targets = others(exclude).map((it) => it.obj);
   const p = new THREE.Vector3();
   const origin = new THREE.Vector3();
   let y = -Infinity;
@@ -321,7 +325,7 @@ function restHeight(samples, quaternion, scale, x, z, start, exclude) {
   return y;
 }
 
-async function settleItem(it, start) {
+async function settleItem(it, start, exclude = it) {
   const { samples } = await loadModel(it.ref);
   const y = restHeight(
     samples,
@@ -330,9 +334,49 @@ async function settleItem(it, start) {
     it.obj.position.x,
     it.obj.position.z,
     start,
-    it,
+    exclude,
   );
   it.obj.position.y = y;
+  it.obj.updateMatrixWorld(true);
+}
+
+/** The item `b` rests on (where most of its low points touch), or null for the floor. */
+function supportOf(b) {
+  const targets = others(b).map((it) => it.obj);
+  if (!targets.length) return null;
+  const o = b.obj;
+  const p = new THREE.Vector3();
+  const counts = new Map();
+  for (const s of b.samples) {
+    p.copy(s).multiplyScalar(o.scale.x).applyQuaternion(o.quaternion).add(o.position);
+    raycaster.set(new THREE.Vector3(p.x, p.y + 0.005, p.z), DOWN);
+    raycaster.far = 0.015; // touching: a surface within a centimetre below
+    const hit = raycaster.intersectObjects(targets, true)[0];
+    let x = hit?.object;
+    while (x && !itemOf.has(x)) x = x.parent;
+    if (x) counts.set(itemOf.get(x), (counts.get(itemOf.get(x)) ?? 0) + 1);
+  }
+  let best = null;
+  let most = 0;
+  for (const [it, n] of counts) if (n > most) [best, most] = [it, n];
+  return best;
+}
+
+/** Everything resting on `it`, directly or on something that does (a plate, the fruit on it). */
+function carriedBy(it) {
+  const support = new Map(items.map((x) => [x, supportOf(x)]));
+  const out = [];
+  let frontier = new Set([it]);
+  while (frontier.size) {
+    const next = new Set();
+    for (const x of items)
+      if (x !== it && !out.includes(x) && frontier.has(support.get(x))) {
+        out.push(x);
+        next.add(x);
+      }
+    frontier = next;
+  }
+  return out;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -349,7 +393,7 @@ const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 function pick(exclude) {
   raycaster.setFromCamera(pointer, camera);
   raycaster.far = Infinity;
-  const targets = items.filter((it) => it !== exclude).map((it) => it.obj);
+  const targets = others(exclude).map((it) => it.obj);
   const hit = raycaster.intersectObjects(targets, true)[0];
   if (hit) {
     let o = hit.object;
@@ -434,7 +478,7 @@ canvas.addEventListener("pointermove", (e) => {
   if (drag) {
     if (!drag.moved && Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) < 4) return;
     drag.moved = true;
-    const at = pick(drag.it);
+    const at = pick(drag.moving);
     if (!at) return;
     const o = drag.it.obj;
     o.position.x = at.point.x - drag.dx;
@@ -446,8 +490,14 @@ canvas.addEventListener("pointermove", (e) => {
       o.position.x,
       o.position.z,
       at.point.y,
-      drag.it,
+      drag.moving,
     );
+    o.updateMatrixWorld(true);
+    // What rests on it comes along.
+    for (const c of drag.carried) {
+      c.it.obj.position.copy(o.position).add(c.offset);
+      c.it.obj.updateMatrixWorld(true);
+    }
     selBox.setFromObject(o);
     updateInspector();
     redraw();
@@ -465,8 +515,14 @@ canvas.addEventListener("pointerdown", async (e) => {
     controls.enabled = false;
     canvas.setPointerCapture(e.pointerId);
     const { samples } = await loadModel(at.item.ref);
+    const carried = carriedBy(at.item).map((c) => ({
+      it: c,
+      offset: c.obj.position.clone().sub(at.item.obj.position),
+    }));
     drag = {
       it: at.item,
+      carried,
+      moving: new Set([at.item, ...carried.map((c) => c.it)]),
       dx: at.point.x - at.item.obj.position.x,
       dz: at.point.z - at.item.obj.position.z,
       moved: false,
@@ -526,8 +582,20 @@ async function turn(deg) {
   }
   if (!selected) return;
   const o = selected.obj;
+  const carried = carriedBy(selected);
+  const before = o.position.clone();
   o.quaternion.premultiply(q);
-  await settleItem(selected, o.position.y);
+  // What rests on it turns with it, about its centre.
+  for (const c of carried) {
+    c.obj.position.sub(before).applyQuaternion(q).add(before);
+    c.obj.quaternion.premultiply(q);
+  }
+  await settleItem(selected, o.position.y, new Set([selected, ...carried]));
+  const dy = o.position.y - before.y;
+  for (const c of carried) {
+    c.obj.position.y += dy;
+    c.obj.updateMatrixWorld(true);
+  }
   select(selected);
   commit(`Turned ${byRef.get(selected.ref).manifest.name}`);
 }
@@ -548,10 +616,14 @@ async function duplicate() {
   commit(`Duplicated ${byRef.get(it.ref).manifest.name}`);
 }
 
-function deleteSelected() {
+async function deleteSelected() {
   if (!selected) return;
   const name = byRef.get(selected.ref).manifest.name;
+  const carried = carriedBy(selected);
   removeItem(selected);
+  // What rested on it drops onto whatever is below, lowest first.
+  carried.sort((a, b) => a.obj.position.y - b.obj.position.y);
+  for (const c of carried) await settleItem(c, c.obj.position.y);
   commit(`Deleted ${name}`);
 }
 
