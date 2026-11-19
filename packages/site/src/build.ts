@@ -109,7 +109,8 @@ async function ensurePreviews(o: SiteOptions, index: Index) {
       existsSync(keyFile) &&
       readFileSync(keyFile, "utf8") === key &&
       existsSync(path.join(dir, "kit.png")) &&
-      existsSync(path.join(dir, "thumb.png"));
+      existsSync(path.join(dir, "thumb.png")) &&
+      existsSync(path.join(dir, "card.webp"));
     if (!fresh) {
       o.log?.(`rendering previews for ${a.ref}`);
       await renderPreviews(path.join(o.root, a.path), {
@@ -158,10 +159,21 @@ async function ensureCompositionPreviews(o: SiteOptions, index: Index) {
   }
 }
 
+/** The small WebP gallery image for an asset, when the previews have one; else the thumbnail. */
+function cardImage(o: SiteOptions, a: IndexAsset): string | undefined {
+  const thumb = a.previews?.thumb;
+  if (!thumb) return thumb;
+  const card = thumb.replace(/thumb\.png$/, "card.webp");
+  return card !== thumb &&
+    existsSync(path.join(o.root, "previews", a.id, `v${a.version}`, "card.webp"))
+    ? card
+    : thumb;
+}
+
 function assetCard(o: SiteOptions, a: IndexAsset): Raw {
   const m = a.manifest ?? {};
   return html`<li class="card" data-size="${m.size_class}" data-ai="${m.ai_assisted ? "yes" : "no"}" data-tags="${(m.tags ?? []).join(" ")}">
-  <img class="thumb" src="${o.base}${a.previews?.thumb}" alt="" width="512" height="512" loading="lazy">
+  <img class="thumb" src="${o.base}${cardImage(o, a)}" alt="" width="384" height="384" loading="lazy">
   <div class="card-body">
     <a class="card-title" href="${o.base}${a.path}/">${m.name}</a>
     <span class="card-meta">${dimensions(a.measured?.bounds_m)} ${badges(a)}</span>
@@ -427,7 +439,7 @@ function compositionPage(o: SiteOptions, index: Index, c: IndexComposition): str
     const pos = Array.isArray(item.position)
       ? item.position.map((n: number) => `${(Number(n) * 100).toFixed(1)}`).join(", ")
       : "";
-    return html`<tr><td>${i + 1}</td><td>${a?.previews ? html`<img class="item-thumb" src="${o.base}${a.previews.thumb}" alt="" width="44" height="44" loading="lazy">` : ""}</td><td>${a ? html`<a href="${o.base}${a.path}/">${a.manifest?.name}</a><br><span class="muted">${item.asset}</span>` : item.asset}</td><td>${pos}</td><td>${item.scale ?? 1}</td></tr>`;
+    return html`<tr><td>${i + 1}</td><td>${a?.previews ? html`<img class="item-thumb" src="${o.base}${cardImage(o, a)}" alt="" width="44" height="44" loading="lazy">` : ""}</td><td>${a ? html`<a href="${o.base}${a.path}/">${a.manifest?.name}</a><br><span class="muted">${item.asset}</span>` : item.asset}</td><td>${pos}</td><td>${item.scale ?? 1}</td></tr>`;
   });
   const body = html`
 <nav class="crumbs"><a href="${o.base}compositions/">Compositions</a> / ${c.id}</nav>
@@ -677,6 +689,9 @@ export async function buildSite(o: SiteOptions): Promise<Index> {
           const src = path.join(o.root, "previews", a.id, `v${a.version}`, `${v}.png`);
           if (existsSync(src)) copy(src, a.previews[v]);
         }
+      const card = path.join(o.root, "previews", a.id, `v${a.version}`, "card.webp");
+      if (a.previews && existsSync(card))
+        copy(card, a.previews.thumb.replace(/thumb\.png$/, "card.webp"));
     }
     write(`${a.path}/index.html`, assetPage(o, index, a));
   }

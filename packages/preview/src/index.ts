@@ -85,7 +85,11 @@ export function pickNeighbours(root: string, self: Manifest, max = 2): Neighbour
 export interface PreviewResult {
   /** The four review images, plus `thumb` (a close-up of the asset alone) and, for assets that
    *  use extensions, `fallback` (the close-up with every extension removed). */
-  files: Record<(typeof PREVIEW_VIEWS)[number], string> & { thumb?: string; fallback?: string };
+  files: Record<(typeof PREVIEW_VIEWS)[number], string> & {
+    thumb?: string;
+    card?: string;
+    fallback?: string;
+  };
   neighbours: string[];
   bounds_m: [number, number, number];
 }
@@ -172,6 +176,16 @@ export async function renderPreviews(
         Buffer.from(shots.thumb.slice("data:image/png;base64,".length), "base64"),
       );
       files.thumb = file;
+    }
+    // The same close-up at 384 px as WebP (a few tens of kB instead of a few hundred), for the
+    // site's gallery cards.
+    if (typeof shots.card === "string" && shots.card.startsWith("data:image/webp;base64,")) {
+      const file = path.join(outDir, "card.webp");
+      writeFileSync(
+        file,
+        Buffer.from(shots.card.slice("data:image/webp;base64,".length), "base64"),
+      );
+      files.card = file;
     }
     if (fallbackModel) {
       const data = (await page.evaluate(

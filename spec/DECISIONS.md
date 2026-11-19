@@ -380,3 +380,11 @@ up and still pass.
 - **CI browser install**: GitHub's Ubuntu images already have Chrome's system libraries, so CI
   downloads only the browser and checks it starts; apt runs only if it doesn't (stalled apt
   mirrors had hung three runs, and a timed-out attempt left apt's lock held).
+
+## Gallery cards (19 November 2026)
+
+- **Cards use a 384 px WebP copy of the close-up** (`card.webp`, written next to `thumb.png` by
+  the preview renderer), about 5–10 kB instead of 350–400 kB. With 60 assets the home page's
+  gallery would otherwise download about 20 MB as people scroll. The PNG previews are unchanged
+  for asset pages and reviewers; `index.json` is unchanged (the card path is the thumbnail's with
+  `card.webp` in place of `thumb.png`), and the site falls back to the PNG where there's no card.

@@ -71,6 +71,15 @@ function snapshot(renderer, scene, camera) {
   return renderer.domElement.toDataURL("image/png");
 }
 
+/** The last frame, scaled down and WebP-compressed: small enough for gallery cards. */
+function smallCopy(renderer, side) {
+  const c = document.createElement("canvas");
+  c.width = side;
+  c.height = side;
+  c.getContext("2d").drawImage(renderer.domElement, 0, 0, side, side);
+  return c.toDataURL("image/webp", 0.85);
+}
+
 /**
  * job = { model: url, sizeClass, neighbours: [url, url] }
  * returns { front, side, top, kit } as PNG data URLs, plus the measured bounds.
@@ -122,6 +131,7 @@ window.renderJob = async (job) => {
   const backdrop = isTransmissive(asset) ? stripedCard(assetBox, viewDirection("front")) : null;
   if (backdrop) scene.add(backdrop);
   out.thumb = snapshot(renderer, scene, thumbCamera);
+  out.card = smallCopy(renderer, 384);
   if (backdrop) scene.remove(backdrop);
 
   // Kit view: the asset between up to two neighbours of the same size class.

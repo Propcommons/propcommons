@@ -41,7 +41,7 @@ beforeAll(async () => {
 
 describe("previews", () => {
   it("renders four 1024 × 1024 PNGs", () => {
-    expect(Object.keys(a.files).sort()).toEqual([...PREVIEW_VIEWS, "thumb"].sort());
+    expect(Object.keys(a.files).sort()).toEqual([...PREVIEW_VIEWS, "thumb", "card"].sort());
     for (const view of PREVIEW_VIEWS) {
       const png = decodePng(a.files[view]);
       expect([png.width, png.height], view).toEqual([1024, 1024]);
