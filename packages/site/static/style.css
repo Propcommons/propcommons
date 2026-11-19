@@ -1188,6 +1188,7 @@ body.app > main {
   top: 38%;
   transform: translate(-50%, -50%);
   max-width: 26rem;
+  width: calc(100% - 32px);
   padding: 18px 22px;
   border-radius: var(--radius);
   background: color-mix(in srgb, #fff 82%, transparent);
@@ -1446,4 +1447,15 @@ body.app > main {
 
 .statusbar #count {
   flex: none;
+}
+
+.empty-state button {
+  pointer-events: auto;
+  font: inherit;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--accent-text);
+  cursor: pointer;
 }

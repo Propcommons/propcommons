@@ -520,7 +520,7 @@ function studioPage(o: SiteOptions, index: Index, repo: string): string {
     </div>
     <div class="viewport-wrap">
       <canvas id="viewport" aria-label="3D scene: drag props to move them, drag empty space to look around"></canvas>
-      <div class="empty-state" id="empty"><h2>Build a scene</h2><p>Pick a prop on the left, then click on the floor to place it. Props land on whatever is under them: put a table down first, then a plate on it.</p><p class="muted">Or open one of the published scenes from the toolbar.</p></div>
+      <div class="empty-state" id="empty"><h2>Build a scene</h2><p>Pick a prop on the left, then click on the floor to place it. Props land on whatever is under them: put a table down first, then a plate on it.</p><p><button type="button" class="primary" id="try-scene">Start from a ready-made scene</button></p></div>
       <div class="inspector" id="inspector" hidden><a id="insp-name" href="#"></a><span id="insp-meta" class="muted"></span></div>
       <p class="toast" id="toast" role="status" hidden></p>
     </div>

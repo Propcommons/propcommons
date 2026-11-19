@@ -1144,6 +1144,11 @@ bind("export-json", exportComposition);
 bind("picture", exportPicture);
 bind("share", shareLink);
 bind("help", () => $("help-dialog").showModal());
+bind("try-scene", () => {
+  // The scene with the most items shows off the most.
+  const best = [...compositions].sort((a, b) => b.items.length - a.items.length)[0];
+  if (best) openComposition(best.ref);
+});
 bind("grid", () => {
   const on = $("grid").getAttribute("aria-pressed") !== "true";
   $("grid").setAttribute("aria-pressed", String(on));
