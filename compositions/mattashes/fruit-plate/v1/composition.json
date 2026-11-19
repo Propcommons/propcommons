@@ -1,0 +1,139 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/fruit-plate",
+  "version": 1,
+  "name": "Fruit plate",
+  "license": "CC0-1.0",
+  "tags": [
+    "kitchen",
+    "food",
+    "fruit",
+    "still-life"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "directed"
+      ]
+    }
+  ],
+  "ai_assisted": true,
+  "tools": [
+    "Claude Opus 5.5"
+  ],
+  "items": [
+    {
+      "asset": "mattashes/dinner-plate@1",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/banana@1",
+      "position": [
+        0,
+        0.0088,
+        0.022
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/orange@1",
+      "position": [
+        -0.048,
+        0.0088,
+        -0.05
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/apple-red@1",
+      "position": [
+        0.05,
+        0.00911,
+        -0.048
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/lemon@1",
+      "position": [
+        0.062,
+        0.01865,
+        0.088
+      ],
+      "rotation": [
+        0,
+        0.258819,
+        0,
+        0.965926
+      ]
+    },
+    {
+      "asset": "mattashes/strawberry@1",
+      "position": [
+        -0.07,
+        0.0193,
+        0.075
+      ],
+      "rotation": [
+        0,
+        0.087156,
+        0,
+        0.996195
+      ]
+    },
+    {
+      "asset": "mattashes/strawberry@1",
+      "position": [
+        -0.037,
+        0.01731,
+        0.09
+      ],
+      "rotation": [
+        0,
+        0.573576,
+        0,
+        0.819152
+      ]
+    },
+    {
+      "asset": "mattashes/strawberry@1",
+      "position": [
+        -0.058,
+        0.02442,
+        0.108
+      ],
+      "rotation": [
+        0,
+        0.939693,
+        0,
+        0.34202
+      ]
+    }
+  ]
+}
