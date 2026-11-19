@@ -146,8 +146,10 @@ What to expect:
 - **The sign-off.** Before `submit`, the agent must show you the sign-off statement word for word.
   If it is true and you say yes, that yes is your sign-off: `submit` ticks the box in the pull
   request for you. If it isn't true, say no.
-- **`submit`** opens the pull request with your `gh` login (step 1.4). It only accepts folders
-  under your own handle. Without `gh`, it prints the same steps as sections 6 and 7 below.
+- **`submit`** opens the pull request with your `gh` login (step 1.4), from your fork (it makes
+  the fork if you don't have one). It only accepts folders under your own handle and takes a few
+  seconds. If a reviewer asks for a change, fix the folder and call `submit` again: it updates the
+  same pull request. Without `gh`, it prints the same steps as sections 6 and 7 below.
 
 ## 4b. By hand
 
