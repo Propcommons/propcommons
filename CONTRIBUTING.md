@@ -373,9 +373,11 @@ rough height (higher for what should end up on top), and run
 npx propcommons settle compositions/yourname/<slug>/v1
 ```
 
-It drops every item straight down, bottom of the pile first, until it rests on the ground or on
-what's under it, centres the scene, and rewrites `composition.json` (`--dry-run` only shows what
-would change). It takes seconds and needs no physics, but nothing rolls or slides: an item stays
+It lowers every item straight down from the height you gave it, bottom of the pile first, until
+it rests on the ground or on what's under it, centres the scene, and rewrites `composition.json`
+(`--dry-run` only shows what would change). So give each item a height a little above where it
+should rest: a box on a bench's low shelf needs a height just above the shelf, not above the bench
+top, and a chair pushed under a table goes at 0. It takes seconds and needs no physics, but nothing rolls or slides: an item stays
 where you put it in x and z, at the rotation you gave it. For a natural tumbled heap, run a physics
 drop in Blender instead and copy the settled positions and rotations. For a drop: use the
 models' real shapes for hollow things (a bowl), give the falling items their own pivot at their

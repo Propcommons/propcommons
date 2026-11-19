@@ -316,6 +316,13 @@ up and still pass.
   failed on the rehearsal scene (a strawberry tucked under another; a bowl taller than its fruit).
 - **On the rehearsal scene** it puts every strawberry within 0.21 mm below where Blender's physics
   left it (Blender's collision margin).
+- **Lowered from the given height, not dropped from above everything** (changed 19 November):
+  surfaces above an item's given position don't catch it, except within 2 cm (for heights given a
+  little low). Dropping from above put a toolbox meant for a bench's low shelf on the bench top, and
+  a chair tucked under a table onto the table, whenever the furniture settled first. Order now also
+  puts an item after one that most of its base is over (a box after the shelf it sits on, though
+  the bench top is above the box); otherwise the earlier rule decides, so every published scene
+  settles exactly as before.
 - **It centres the footprint** too (CMP-CENTER), unless `--no-center`. It is a command-line tool
   only; the MCP server's six tools are unchanged, and agents run it from the shell.
 

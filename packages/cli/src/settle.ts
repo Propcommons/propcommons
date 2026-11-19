@@ -188,6 +188,9 @@ async function loadMesh(root: string, ref: string): Promise<LocalMesh> {
  * Among items free to go next, the one whose lowest point is lowest goes first; if items each sit
  * partly on the other, the lowest of them goes first.
  */
+/** How far above an item's given position a surface may be and still catch it (metres). */
+const REACH = 0.02;
+
 function settleOrder(
   items: SettleItem[],
   locals: Vec3[][],
@@ -199,22 +202,52 @@ function settleOrder(
     return local.map((p) => [p[0], p[1] + y, p[2]] as Vec3);
   });
   const box = placed.map((pts) => {
-    const b = [Infinity, -Infinity, Infinity, -Infinity, Infinity];
+    const b = [Infinity, -Infinity, Infinity, -Infinity, Infinity, -Infinity];
     for (const p of pts) {
       b[0] = Math.min(b[0] as number, p[0]);
       b[1] = Math.max(b[1] as number, p[0]);
       b[2] = Math.min(b[2] as number, p[2]);
       b[3] = Math.max(b[3] as number, p[2]);
       b[4] = Math.min(b[4] as number, p[1]);
+      b[5] = Math.max(b[5] as number, p[1]);
     }
-    return b as [number, number, number, number, number];
+    return b as [number, number, number, number, number, number];
   });
   const grids = placed.map((pts, i) => {
     const g = new TriangleGrid();
     g.add(pts, (meshes.get(items[i]?.asset as string) as LocalMesh).triangles, i);
     return g;
   });
-  /** Votes that b is above a: b's vertices above a's surface, a's vertices below b's surface. */
+  /**
+   * The share of b's lowest points that have a surface of a directly under them: near 1 when b
+   * sits on a (a box on a shelf), small when they only overlap at an edge. Only the bottom
+   * quarter of b counts, so a bench whose top is over a box on its shelf doesn't sit on the box.
+   */
+  const restsOn = (a: number, b: number): number => {
+    let v = 0;
+    let all = 0;
+    const [x0, x1, z0, z1] = box[a] as number[];
+    const B = box[b] as number[];
+    const band = (B[4] as number) + Math.max(0.01, 0.25 * ((B[5] as number) - (B[4] as number)));
+    for (const p of placed[b] as Vec3[]) {
+      if (p[1] > band) continue;
+      all++;
+      if (
+        p[0] < (x0 as number) ||
+        p[0] > (x1 as number) ||
+        p[2] < (z0 as number) ||
+        p[2] > (z1 as number)
+      )
+        continue;
+      for (const [y] of (grids[a] as TriangleGrid).hits(p[0], p[2]))
+        if (y <= p[1] + 1e-6) {
+          v++;
+          break;
+        }
+    }
+    return all ? v / all : 0;
+  };
+  /** Votes that b is above a: each of b's vertices over a counts +1 per surface of a below it, -1 per surface above. */
   const votes = (a: number, b: number): number => {
     let v = 0;
     const [x0, x1, z0, z1] = box[a] as number[];
@@ -237,7 +270,12 @@ function settleOrder(
       const B = box[b] as number[];
       if ((A[1] as number) < (B[0] as number) || (B[1] as number) < (A[0] as number)) continue;
       if ((A[3] as number) < (B[2] as number) || (B[3] as number) < (A[2] as number)) continue;
-      const v = votes(a, b) - votes(b, a);
+      // When most of one item's base is over the other, it goes after it (a box on a bench's
+      // shelf, though the bench top is above the box). Otherwise (two fruit side by side, a
+      // chair half under a table) the one that is above more overall goes after.
+      const ab = restsOn(a, b);
+      const ba = restsOn(b, a);
+      const v = ab >= 0.5 && ba < 0.5 ? 1 : ba >= 0.5 && ab < 0.5 ? -1 : votes(a, b) - votes(b, a);
       if (v > 0) (below[b] as Set<number>).add(a);
       else if (v < 0) (below[a] as Set<number>).add(b);
     }
@@ -301,13 +339,17 @@ export async function settleComposition(
     const item = composition.items[i] as SettleItem;
     const mesh = meshes.get(item.asset) as LocalMesh;
     const local = locals[i] as Vec3[];
+    // Where the author put it: an item is lowered from there, so a surface above it (a table top
+    // over a chair's seat, a bench top over a box on its shelf) doesn't catch it. A surface up to
+    // REACH above still counts, for heights given a little too low.
+    const given = item.position[1] as number;
     // The ground: the item's lowest point at y = 0.
     let lift = -Math.min(...local.map((p) => p[1]));
     let restsOn: "ground" | number = "ground";
     // The item's vertices onto what is already placed.
     for (const p of local)
       for (const [y, owner] of scene.hits(p[0], p[2]))
-        if (y - p[1] > lift) {
+        if (y <= p[1] + given + REACH && y - p[1] > lift) {
           lift = y - p[1];
           restsOn = owner + 1;
         }
@@ -327,7 +369,7 @@ export async function settleComposition(
     for (const { p, owner } of scenePoints) {
       if (p[0] < minX || p[0] > maxX || p[2] < minZ || p[2] > maxZ) continue;
       for (const [y] of own.hits(p[0], p[2]))
-        if (p[1] - y > lift) {
+        if (p[1] <= y + given + REACH && p[1] - y > lift) {
           lift = p[1] - y;
           restsOn = owner + 1;
         }

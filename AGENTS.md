@@ -118,8 +118,9 @@ npx propcommons preview assets/alice/strawberry-whole/v1
 ```
 
 For a composition, `npx propcommons settle compositions/<author>/<slug>/v1` sets every item's
-height so it rests on the ground or on what's under it (straight down, bottom of the pile first) and
-centres the scene; choose x, z and rotation yourself.
+height so it rests on the ground or on what's under it (lowered straight down from the height you
+give, bottom of the pile first) and centres the scene; choose x, z, rotation and a rough height a
+little above the resting place yourself.
 
 Before pushing, check the commits exactly as GitHub will (the sign-off is assumed ticked):
 
