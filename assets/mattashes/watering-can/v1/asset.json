@@ -1,0 +1,25 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/watering-can",
+  "version": 1,
+  "name": "Watering can, galvanised",
+  "license": "CC0-1.0",
+  "size_class": "medium",
+  "tags": [
+    "garden",
+    "tool"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "directed"
+      ]
+    }
+  ],
+  "ai_assisted": true,
+  "tools": [
+    "glTF-Transform",
+    "Claude Opus 5.5"
+  ]
+}

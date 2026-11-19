@@ -1,0 +1,194 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/garden-corner",
+  "version": 1,
+  "name": "Garden corner",
+  "license": "CC0-1.0",
+  "tags": [
+    "garden",
+    "furniture",
+    "tool"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "directed"
+      ]
+    }
+  ],
+  "ai_assisted": true,
+  "tools": [
+    "Claude Opus 5.5"
+  ],
+  "items": [
+    {
+      "asset": "mattashes/garden-bench@1",
+      "position": [
+        -0.72514,
+        0,
+        -0.6891
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/wheelbarrow@1",
+      "position": [
+        1.37486,
+        0,
+        0.4609
+      ],
+      "rotation": [
+        0,
+        -0.173648,
+        0,
+        0.984808
+      ]
+    },
+    {
+      "asset": "mattashes/wooden-crate@1",
+      "position": [
+        -0.97514,
+        0,
+        0.2109
+      ],
+      "rotation": [
+        0,
+        0.087156,
+        0,
+        0.996195
+      ]
+    },
+    {
+      "asset": "mattashes/apple-red@1",
+      "position": [
+        -1.07514,
+        0.012,
+        0.1609
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/apple-red@1",
+      "position": [
+        -0.99514,
+        0.012,
+        0.2409
+      ],
+      "rotation": [
+        0,
+        0.34202,
+        0,
+        0.939693
+      ]
+    },
+    {
+      "asset": "mattashes/apple-red@1",
+      "position": [
+        -0.90514,
+        0.012,
+        0.1509
+      ],
+      "rotation": [
+        0,
+        0.707107,
+        0,
+        0.707107
+      ]
+    },
+    {
+      "asset": "mattashes/apple-red@1",
+      "position": [
+        -0.84514,
+        0.012,
+        0.2709
+      ],
+      "rotation": [
+        0,
+        0.906308,
+        0,
+        0.422618
+      ]
+    },
+    {
+      "asset": "mattashes/terracotta-pot@1",
+      "position": [
+        -1.92514,
+        0,
+        -0.7391
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/terracotta-pot@1",
+      "position": [
+        0.22486,
+        0,
+        -0.7891
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/watering-can@1",
+      "position": [
+        -1.87514,
+        0,
+        0.1109
+      ],
+      "rotation": [
+        0,
+        0.984808,
+        0,
+        -0.173648
+      ]
+    },
+    {
+      "asset": "mattashes/spade@1",
+      "position": [
+        0.02486,
+        0,
+        0.7109
+      ],
+      "rotation": [
+        0,
+        -0.21644,
+        0,
+        0.976296
+      ]
+    },
+    {
+      "asset": "mattashes/ceramic-mug@1",
+      "position": [
+        -0.37514,
+        0.44,
+        -0.6891
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    }
+  ]
+}
