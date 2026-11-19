@@ -1072,8 +1072,16 @@ function updateInspector() {
   box.hidden = false;
   $("insp-name").textContent = a.manifest.name;
   $("insp-name").href = `${base}${a.path}/`;
-  $("insp-meta").textContent =
-    `${dims(a.measured?.bounds_m)} · at ${[o.position.x, o.position.y, o.position.z].map((v) => Math.round(v * 100)).join(", ")} cm · turned ${((yaw % 360) + 360) % 360}°`;
+  const on = supportOf(selected);
+  const carrying = carriedBy(selected).length;
+  $("insp-meta").textContent = [
+    dims(a.measured?.bounds_m),
+    on ? `on the ${byRef.get(on.ref).manifest.name.split(",")[0].toLowerCase()}` : "on the floor",
+    carrying ? `carrying ${carrying} prop${carrying === 1 ? "" : "s"}` : "",
+    `turned ${((yaw % 360) + 360) % 360}°`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 }
 function updateButtons() {
   for (const id of ["turn-left", "turn-right", "duplicate", "delete"]) $(id).disabled = !selected;
