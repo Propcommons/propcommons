@@ -30,7 +30,7 @@ jobs:
           package-manager-cache: false
 
       - run: npm ci --ignore-scripts --no-audit --no-fund
-      - run: npx playwright install --with-deps --only-shell chromium
+      - run: bash tools/ci/install-browser.sh
       - name: Build index.json, previews and pages
         run: npm run site
 
