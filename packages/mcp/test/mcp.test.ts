@@ -74,11 +74,12 @@ afterAll(async () => {
 });
 
 describe("MCP server", () => {
-  it("lists exactly the seven tools", async () => {
+  it("lists exactly the eight tools", async () => {
     const { tools } = await client.listTools();
     expect(tools.map((t) => t.name).sort()).toEqual([
       "compose_scene",
       "get_spec",
+      "improve_asset",
       "init_asset",
       "render_preview",
       "search_assets",
@@ -132,6 +133,46 @@ describe("MCP server", () => {
     expect(v.content[1]?.text).toContain("placeholder box");
     const manifest = JSON.parse(readFileSync(path.join(repo, r.path, "asset.json"), "utf8"));
     expect(manifest).toMatchObject({ ai_assisted: true, tools: ["Claude"] });
+  });
+
+  it("improve_asset starts someone else's asset under the person's handle", async () => {
+    const r = JSON.parse(
+      textOf(
+        await call("improve_asset", {
+          from: "alice/mug",
+          author: "dave",
+          ai_assisted: true,
+          tools: ["Claude Opus 5.5"],
+        }),
+      ),
+    );
+    expect(r).toMatchObject({
+      path: "assets/dave/mug/v1",
+      from: "alice/mug@1",
+      from_path: "assets/alice/mug/v1",
+      same_asset: false,
+    });
+    expect(r.original.bounds_m).toHaveLength(3);
+    const manifest = JSON.parse(readFileSync(path.join(repo, r.path, "asset.json"), "utf8"));
+    expect(manifest).toMatchObject({
+      id: "dave/mug",
+      version: 1,
+      name: "Mug",
+      parent: "alice/mug@1",
+      ai_assisted: true,
+      tools: ["Claude Opus 5.5"],
+    });
+    expect(manifest.credits.map((c: { github: string }) => c.github)).toEqual(["dave", "alice"]);
+    const v = await call("validate", { folder: r.path });
+    expect(JSON.parse(textOf(v)).pass).toBe(true);
+    expect(v.content[1]?.text).toContain("same file as alice/mug@1");
+    const bad = await call("improve_asset", {
+      from: "alice/nothing",
+      author: "dave",
+      ai_assisted: true,
+      tools: ["Claude"],
+    });
+    expect(bad.isError).toBe(true);
   });
 
   it("init_asset requires ai_assisted and tools", async () => {

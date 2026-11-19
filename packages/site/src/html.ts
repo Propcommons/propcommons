@@ -127,7 +127,7 @@ export function page(o: PageOptions): string {
     <div>
       <h2>Contribute</h2>
       <ul>
-        <li><a href="${o.base}contribute/">Add an asset</a></li>
+        <li><a href="${o.base}contribute/">Make a prop</a></li>
         <li><a href="${o.base}spec/0.1/">The asset spec</a></li>
         <li><a href="${repoUrl}">GitHub</a></li>
       </ul>
@@ -170,7 +170,7 @@ ${(o.scripts ?? []).map((s) => html`<script ${raw(s.module === false ? "defer" :
       ${nav("wanted", "wanted/", "Wanted")}
       ${nav("about", "about/", "About")}
       <a class="nav-github" href="${repoUrl}">GitHub</a>
-      <a class="button small${o.active === "contribute" ? " current" : ""}" href="${o.base}contribute/">Contribute</a>
+      <a class="button small${o.active === "contribute" ? " current" : ""}" href="${o.base}contribute/">Make a prop</a>
     </nav>
   </div>
 </header>

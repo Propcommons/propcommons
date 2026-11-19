@@ -13,6 +13,7 @@ import {
   buildIndex,
   CannotValidate,
   COMPOSITION_SCHEMA,
+  improveAsset,
   initAsset,
   isPlaceholderModel,
   parseVersionPath,
@@ -20,6 +21,7 @@ import {
   SIGNOFF_STATEMENT,
   type SizeClass,
   UsageError,
+  unchangedFrom,
   validateFolder,
 } from "@propcommons/validator";
 import { settleComposition } from "propcommons/settle";
@@ -163,6 +165,73 @@ export function createServer(o: ServerOptions): McpServer {
   );
 
   server.registerTool(
+    "improve_asset",
+    {
+      title: "Start a better version of an existing asset",
+      description:
+        "Copies an existing asset's version folder, model included, as the starting point for a better one, and returns the new folder, the original's folder and its measured size. When the person is the asset's author it becomes the next version; otherwise it is a new asset under their own handle, with parent naming the original (it then appears on the original's page). Next: render_preview the original's folder to see what to improve, replace model.glb in the new folder with the better model at about the same size, then validate. A pull request whose model.glb is unchanged from the original is refused.",
+      inputSchema: z.strictObject({
+        from: z
+          .string()
+          .describe("The asset to improve: author/slug for its latest version, or author/slug@N."),
+        author: z.string().describe("The person's GitHub handle, lower case."),
+        slug: z
+          .string()
+          .optional()
+          .describe(
+            "Only for someone else's asset: a slug for the new one. Defaults to the original's.",
+          ),
+        ai_assisted: z
+          .boolean()
+          .describe(
+            "True if any AI tool (including you, the agent) makes or changes any part of it.",
+          ),
+        tools: z
+          .array(z.string())
+          .min(1)
+          .describe(
+            'Software and AI models used for this version, e.g. ["Claude Opus 5.5", "glTF-Transform"].',
+          ),
+        roles: z
+          .array(z.enum(["directed", "modeled", "sculpted", "textured", "coded", "scanned"]))
+          .min(1)
+          .optional()
+          .describe(
+            'The person\'s credit roles. Defaults to ["directed"] when ai_assisted is true.',
+          ),
+      }),
+    },
+    async ({ from, author, slug, ai_assisted, tools, roles }) => {
+      try {
+        const r = improveAsset({ root, from, author, slug, aiAssisted: ai_assisted, tools, roles });
+        const rel = (p: string) => path.relative(root, p).split(path.sep).join("/");
+        const measured = (await validateFolder(r.sourceDir, { root })).measured as {
+          bounds_m?: number[];
+          triangles?: number;
+          materials?: number;
+          textures?: unknown[];
+        };
+        return json({
+          path: rel(r.dir),
+          from: r.source,
+          from_path: rel(r.sourceDir),
+          same_asset: r.sameAsset,
+          original: {
+            bounds_m: measured.bounds_m ?? null,
+            triangles: measured.triangles ?? null,
+            materials: measured.materials ?? null,
+            textures: measured.textures ?? null,
+          },
+          next: `model.glb in ${rel(r.dir)} is a copy of the original. Look at the original with render_preview on ${rel(r.sourceDir)}, build the better model, replace model.glb, then validate.`,
+        });
+      } catch (e) {
+        if (e instanceof UsageError) return text(e.message, true);
+        throw e;
+      }
+    },
+  );
+
+  server.registerTool(
     "validate",
     {
       title: "Validate a version folder",
@@ -181,6 +250,12 @@ export function createServer(o: ServerOptions): McpServer {
           out.content.push({
             type: "text",
             text: "Note: model.glb is still the placeholder box from init_asset. Replace it with the real model; a pull request with the placeholder is refused.",
+          });
+        const same = unchangedFrom(dir);
+        if (same)
+          out.content.push({
+            type: "text",
+            text: `Note: model.glb is still the same file as ${same}. Replace it with the better model.`,
           });
         return out;
       } catch (e) {

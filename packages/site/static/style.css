@@ -1484,3 +1484,120 @@ body.app > main {
   color: var(--accent-text);
   cursor: pointer;
 }
+
+/* "Improve it" and "Make a prop": the prompt builder (static/make.js) */
+.maker label {
+  display: block;
+  margin: 12px 0;
+  font-weight: 600;
+}
+
+.maker textarea {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  font: inherit;
+  font-weight: 400;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  resize: vertical;
+}
+
+.maker label[hidden] {
+  display: none;
+}
+
+.maker-how {
+  border: 0;
+  padding: 0;
+  margin: 12px 0;
+  display: grid;
+  gap: 6px;
+}
+
+.maker-how legend {
+  font-weight: 600;
+  padding: 0;
+  margin-bottom: 4px;
+}
+
+.maker .maker-how label {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.maker .maker-how label:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.maker .maker-how input {
+  display: inline;
+  width: auto;
+  margin: 4px 0 0;
+  accent-color: var(--accent);
+}
+
+.maker .maker-how .muted {
+  display: block;
+  font-size: 0.9rem;
+}
+
+.maker-out-label {
+  font-weight: 600;
+  margin: 14px 0 4px;
+}
+
+.maker-pre {
+  max-height: 16rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.make-box {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 4px 22px 18px;
+  margin: 20px 0 8px;
+}
+
+.panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+button.button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.improve-pitch,
+.small-print {
+  font-size: 0.9rem;
+}
+
+.invite {
+  margin-top: 12px;
+}
+
+.by-hand {
+  margin: 24px 0;
+}
+
+.by-hand summary {
+  font-weight: 600;
+  cursor: pointer;
+}

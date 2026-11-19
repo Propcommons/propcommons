@@ -2,6 +2,7 @@
 // The propcommons command line: a thin wrapper over @propcommons/validator.
 //   propcommons validate <folder...> [--json]
 //   propcommons init <author/slug> [--name ...] [--size-class small|medium|large] [--tags a,b] [--ai-assisted] [--tools a,b]
+//   propcommons improve <author/slug[@N]> --as <handle> [--slug ...] [--ai-assisted] --tools a,b
 //   propcommons preview <folder> [--out dir]
 //   propcommons check-pr --base <dir> --head <dir> --changed <file> --author <login> --body-file <file> [--json]
 //   propcommons build-index [--out index.json]
@@ -16,6 +17,7 @@ import {
   CannotValidate,
   checkPullRequest,
   findRepoRoot,
+  improveAsset,
   initAsset,
   isPlaceholderModel,
   parseNameStatus,
@@ -23,6 +25,7 @@ import {
   SIGNOFF_STATEMENT,
   type SizeClass,
   UsageError,
+  unchangedFrom,
   type ValidationResult,
   validateFolder,
 } from "@propcommons/validator";
@@ -34,6 +37,10 @@ Commands:
   validate <folder...>      Check version folders against the spec. --json prints the result object.
   init <author/slug>        Create assets/<author>/<slug>/v1 from the template.
                             Options: --name, --size-class, --tags a,b, --ai-assisted, --tools a,b
+  improve <author/slug[@N]> Start a better version of an existing asset from a copy of it: the
+                            next version if it is yours, otherwise a new asset under your handle
+                            that names the original as its parent.
+                            Options: --as <your handle>, --slug, --ai-assisted, --tools a,b
   preview <folder>          Render the four preview images (see packages/preview).
   check-pr --against [branch]
                             Check your committed work the way GitHub will, before you push.
@@ -87,6 +94,11 @@ async function cmdValidate(args: string[]): Promise<number> {
         console.log(
           "  note    model.glb is still the placeholder box from `propcommons init`. Replace it with your own model; a pull request with the placeholder is refused.",
         );
+      const same = unchangedFrom(folder);
+      if (same)
+        console.log(
+          `  note    model.glb is still the same file as ${same}. Replace it with the better model.`,
+        );
     });
   return results.every((r) => r.pass) ? 0 : 1;
 }
@@ -134,6 +146,63 @@ async function cmdInit(args: string[]): Promise<number> {
       "  2. Check asset.json, especially ai_assisted (true if any AI tool helped) and tools.",
     );
     console.log(`  3. npx propcommons validate ${rel}`);
+  }
+  return 0;
+}
+
+async function cmdImprove(args: string[]): Promise<number> {
+  const { values, positionals } = parseArgs({
+    args,
+    allowPositionals: true,
+    options: {
+      as: { type: "string" },
+      slug: { type: "string" },
+      "ai-assisted": { type: "boolean" },
+      tools: { type: "string" },
+      json: { type: "boolean" },
+    },
+  });
+  const from = positionals[0];
+  if (!from)
+    throw new UsageError(
+      "improve needs the asset to start from, e.g. propcommons improve alice/mug",
+    );
+  const root = findRepoRoot();
+  let author = values.as;
+  if (!author) {
+    try {
+      author = execFileSync("gh", ["api", "user", "--jq", ".login"], { encoding: "utf8" })
+        .trim()
+        .toLowerCase();
+    } catch {
+      throw new UsageError("Give your GitHub handle with --as, e.g. --as alice.");
+    }
+  }
+  const tools = values.tools
+    ?.split(",")
+    .map((t) => t.trim())
+    .filter(Boolean);
+  if (!tools?.length)
+    throw new UsageError(
+      'List the software and AI models you use with --tools, e.g. --tools "Blender".',
+    );
+  const r = improveAsset({
+    root,
+    from,
+    author,
+    slug: values.slug,
+    aiAssisted: values["ai-assisted"] ?? false,
+    tools,
+  });
+  const rel = (p: string) => path.relative(process.cwd(), p) || ".";
+  if (values.json)
+    console.log(JSON.stringify({ path: rel(r.dir), from: r.source, from_path: rel(r.sourceDir) }));
+  else {
+    console.log(`Created ${rel(r.dir)}, starting from ${r.source}.`);
+    console.log("Next:");
+    console.log(`  1. Look at the original: npx propcommons preview ${rel(r.sourceDir)}`);
+    console.log("  2. Replace model.glb with your better model, at about the same size.");
+    console.log(`  3. npx propcommons validate ${rel(r.dir)}`);
   }
   return 0;
 }
@@ -263,6 +332,8 @@ export async function main(argv: string[]): Promise<number> {
     switch (command) {
       case "validate":
         return await cmdValidate(rest);
+      case "improve":
+        return await cmdImprove(rest);
       case "init":
         return await cmdInit(rest);
       case "preview":

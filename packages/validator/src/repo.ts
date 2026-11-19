@@ -13,7 +13,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import path from "node:path";
-import { HANDLE, isRealDir, PINNED, SLUG } from "./paths.ts";
+import { assetVersionState, HANDLE, isRealDir, PINNED, parseVersionPath, SLUG } from "./paths.ts";
 import type { ValidationResult } from "./result.ts";
 import { type ChangedFile, type ChangeStatus, checkPr, type PrCheckResult } from "./rules/pr.ts";
 import { type SizeClass, SPEC_VERSION } from "./spec.ts";
@@ -71,7 +71,7 @@ export function initAsset(o: InitOptions): string {
   const slugDir = path.join(o.root, "assets", author, slug);
   if (isRealDir(slugDir) && readdirSync(slugDir).length)
     throw new UsageError(
-      `${path.relative(o.root, slugDir)} already exists. To improve an existing asset, copy its latest version folder to the next number (v2, v3, ...) and edit that.`,
+      `${path.relative(o.root, slugDir)} already exists. To make a better version of it, use "propcommons improve" (or the MCP tool improve_asset) instead.`,
     );
   const template = path.join(o.root, "template");
   const dir = path.join(slugDir, "v1");
@@ -90,6 +90,147 @@ export function initAsset(o: InitOptions): string {
   });
   writeFileSync(path.join(dir, "asset.json"), `${JSON.stringify(manifest, null, 2)}\n`);
   return dir;
+}
+
+// ---- improve ----
+
+export interface ImproveOptions {
+  root: string;
+  /** The asset to start from: "author/slug" (its latest version) or "author/slug@N". */
+  from: string;
+  /** The GitHub handle of the person making the improvement. */
+  author: string;
+  /** Slug for a new asset under another author's handle; defaults to the original's slug. */
+  slug?: string;
+  aiAssisted: boolean;
+  tools: string[];
+  roles?: string[];
+}
+
+export interface ImproveResult {
+  /** The new version folder. */
+  dir: string;
+  /** The pinned version it starts from, e.g. alice/mug@2. */
+  source: string;
+  /** That version's folder. */
+  sourceDir: string;
+  /** True when the new folder is the next version of the same asset (same author). */
+  sameAsset: boolean;
+}
+
+/** The version numbers of assets/<author>/<slug>/ that exist in a tree, highest first. */
+function versionsOf(root: string, author: string, slug: string): number[] {
+  const dir = path.join(root, "assets", author, slug);
+  if (!isRealDir(dir)) return [];
+  return readdirSync(dir)
+    .map((n) => /^v([1-9][0-9]*)$/.exec(n)?.[1])
+    .filter((n): n is string => !!n)
+    .map(Number)
+    .sort((a, b) => b - a);
+}
+
+/**
+ * Starts an improvement of an existing asset: a copy of its version folder, model included, as
+ * the next version (when the person is its author) or as a new asset under the person's own handle
+ * with `parent` naming the original. The copy is the starting point; check-pr refuses it until
+ * model.glb has changed.
+ */
+export function improveAsset(o: ImproveOptions): ImproveResult {
+  const m =
+    /^([a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?)\/([a-z0-9]+(?:-[a-z0-9]+)*)(?:@([1-9][0-9]*))?$/.exec(
+      o.from,
+    );
+  if (!m)
+    throw new UsageError(
+      `"${o.from}" is not an asset ID. Use author/slug for its latest version, or author/slug@N for one version, e.g. alice/mug@2.`,
+    );
+  const [, fromAuthor = "", fromSlug = ""] = m;
+  if (!HANDLE.test(o.author))
+    throw new UsageError(`"${o.author}" is not a GitHub handle. Use the handle in lower case.`);
+  const live = versionsOf(o.root, fromAuthor, fromSlug).filter(
+    (v) => assetVersionStateAt(o.root, fromAuthor, fromSlug, v) === "live",
+  );
+  if (!live.length)
+    throw new UsageError(`There is no asset ${fromAuthor}/${fromSlug} in this clone.`);
+  const version = m[3] ? Number(m[3]) : (live[0] as number);
+  if (!live.includes(version))
+    throw new UsageError(
+      `${fromAuthor}/${fromSlug}@${version} does not exist or was taken down. Live versions: ${live.join(", ")}.`,
+    );
+  const source = `${fromAuthor}/${fromSlug}@${version}`;
+  const sourceDir = path.join(o.root, "assets", fromAuthor, fromSlug, `v${version}`);
+  const sameAsset = o.author === fromAuthor;
+  const slug = sameAsset ? fromSlug : (o.slug ?? fromSlug);
+  if (!SLUG.test(slug)) throw new UsageError(`"${slug}" is not a valid slug.`);
+  const next = (versionsOf(o.root, o.author, slug)[0] ?? 0) + 1;
+  const dir = path.join(o.root, "assets", o.author, slug, `v${next}`);
+  mkdirSync(dir, { recursive: true });
+  for (const f of ["model.glb", "collision.glb"])
+    if (isRegularFile(path.join(sourceDir, f)))
+      copyFileSync(path.join(sourceDir, f), path.join(dir, f));
+  const manifest = JSON.parse(readFileSync(path.join(sourceDir, "asset.json"), "utf8"));
+  const mine = { github: o.author, roles: o.roles ?? (o.aiAssisted ? ["directed"] : ["modeled"]) };
+  // The person comes first; the original's credits stay, since the new version is built on it.
+  const credits = [
+    mine,
+    ...(Array.isArray(manifest.credits) ? manifest.credits : []).filter(
+      (c: { github?: string }) => c?.github !== o.author,
+    ),
+  ];
+  Object.assign(manifest, {
+    id: `${o.author}/${slug}`,
+    version: next,
+    credits,
+    ai_assisted: o.aiAssisted || manifest.ai_assisted === true,
+    tools: [...new Set(o.tools)],
+    parent: sameAsset ? (manifest.parent ?? null) : source,
+    source_url: null,
+    notes_url: null,
+  });
+  writeFileSync(path.join(dir, "asset.json"), `${JSON.stringify(manifest, null, 2)}\n`);
+  return { dir, source, sourceDir, sameAsset };
+}
+
+function assetVersionStateAt(root: string, author: string, slug: string, v: number) {
+  return assetVersionState(root, `${author}/${slug}@${v}`);
+}
+
+/**
+ * The pinned version whose model.glb is byte-for-byte the same as this folder's: its parent, or
+ * the previous version of the same asset. Null when the model has changed (or there is nothing to
+ * compare with). `base` is where those versions are looked up; it defaults to the folder's tree.
+ * check-pr passes only = "parent": a new version of one's own asset may change just the manifest.
+ */
+export function unchangedFrom(folder: string, base?: string, only?: "parent"): string | null {
+  const vp = parseVersionPath(folder);
+  if (vp?.kind !== "asset") return null;
+  const tree = base ?? vp.root;
+  const model = path.join(folder, "model.glb");
+  if (!isRegularFile(model)) return null;
+  const candidates: string[] = [];
+  try {
+    const parent = JSON.parse(readFileSync(path.join(folder, "asset.json"), "utf8")).parent;
+    if (typeof parent === "string" && PINNED.test(parent)) candidates.push(parent);
+  } catch {
+    // An unreadable manifest is reported by validate; there is nothing to compare here.
+  }
+  if (vp.version > 1 && only !== "parent")
+    candidates.push(`${vp.author}/${vp.slug}@${vp.version - 1}`);
+  const hash = sha256File(model);
+  for (const ref of candidates) {
+    const p = PINNED.exec(ref);
+    if (!p) continue;
+    const other = path.join(
+      tree,
+      "assets",
+      p[1] as string,
+      p[2] as string,
+      `v${p[3]}`,
+      "model.glb",
+    );
+    if (isRegularFile(other) && sha256File(other) === hash) return ref;
+  }
+  return null;
 }
 
 // ---- check-pr ----
@@ -193,6 +334,7 @@ export async function checkPullRequest(input: PullRequestInput): Promise<PullReq
     problem = "This pull request changes no assets; it is checked by code CI.";
   const folders: ValidationResult[] = [];
   const placeholders: string[] = [];
+  const copies: string[] = [];
   if (pr.kind === "assets") {
     const template = path.join(input.baseRoot, "template", "model.glb");
     const templateHash = existsSync(template) ? sha256File(template) : null;
@@ -203,15 +345,20 @@ export async function checkPullRequest(input: PullRequestInput): Promise<PullReq
       const model = path.join(dir, "model.glb");
       if (templateHash && isRegularFile(model) && sha256File(model) === templateHash)
         placeholders.push(rel);
+      const same = unchangedFrom(dir, input.baseRoot, "parent");
+      if (same) copies.push(`${rel} (the same file as ${same})`);
     }
   }
   if (!problem && placeholders.length)
     problem = `${placeholders.join(", ")} still has the placeholder box from \`propcommons init\` as its model.glb. Replace it with your own model, then commit and push.`;
+  if (!problem && copies.length)
+    problem = `The model.glb in ${copies.join(", ")} has not changed. An improvement needs a better model: replace model.glb, then commit and push.`;
   return {
     spec: SPEC_VERSION,
     pass:
       !links.length &&
       !placeholders.length &&
+      !copies.length &&
       pr.kind === "assets" &&
       pr.pass &&
       folders.every((f) => f.pass),

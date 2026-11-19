@@ -46,12 +46,13 @@ are set.
 
 ### With the MCP server
 
-The server runs locally from your clone, over stdio. It has seven tools:
+The server runs locally from your clone, over stdio. It has eight tools:
 
 | Tool             | What it does                                                                                        |
 | ---------------- | --------------------------------------------------------------------------------------------------- |
 | `get_spec`       | Rules, budgets and both schemas as JSON. Read this first.                                           |
 | `init_asset`     | Creates `assets/<author>/<slug>/v1` from the template.                                              |
+| `improve_asset`  | Starts a better version of an existing asset from a copy of it, linked back to the original.        |
 | `validate`       | Returns the validator's result object: every failed rule, what was measured, the limit and a fix.   |
 | `render_preview` | The four preview images a reviewer will see.                                                        |
 | `search_assets`  | Merged assets and open `wanted.json` entries.                                                       |
@@ -85,6 +86,13 @@ your client can't find `node`, give the full path that `which node` prints as `c
 The server finds its clone on its own, so `--root` is only a safeguard. `PROPCOMMONS_ROOT` works
 too.
 
+**Improving an existing asset:** `improve_asset` with `from` set to its ID copies it as the
+starting point: the next version when the person is its author, otherwise a new asset under their
+own handle whose `parent` names the original (its page then links to it). Look at the original
+with `render_preview` on its folder first, keep about the same size, and replace `model.glb`; a
+pull request whose model is unchanged from its parent is refused. Each asset page on the site has
+an "Improve it" button that writes a prompt for this.
+
 The loop: `get_spec` → `init_asset` (with `ai_assisted: true` and yourself in `tools`; the person's
 credit role defaults to `directed`) → put the real model at `model.glb` → `validate` → fix every
 error → `validate` again until `pass` is true → `render_preview` → show the person the images
@@ -116,6 +124,13 @@ npx propcommons validate assets/alice/strawberry-whole/v1 --json
 
 ```bash
 npx propcommons preview assets/alice/strawberry-whole/v1
+```
+
+To improve an existing asset, start from a copy of it (your handle comes from `gh` if you leave
+out `--as`):
+
+```bash
+npx propcommons improve mattashes/kettle --ai-assisted --tools "Claude Opus 5.5"
 ```
 
 For a composition, `npx propcommons settle compositions/<author>/<slug>/v1` sets every item's
