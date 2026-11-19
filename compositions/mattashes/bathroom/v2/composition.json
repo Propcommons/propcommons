@@ -1,0 +1,123 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/bathroom",
+  "version": 2,
+  "name": "Bathroom",
+  "license": "CC0-1.0",
+  "tags": [
+    "bathroom",
+    "furniture"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "directed"
+      ]
+    }
+  ],
+  "ai_assisted": true,
+  "tools": [
+    "Claude Opus 5.5"
+  ],
+  "items": [
+    {
+      "asset": "mattashes/bathtub@1",
+      "position": [
+        -0.03,
+        0,
+        -0.2975
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/bath-mat@2",
+      "position": [
+        0.07,
+        0,
+        0.4225
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/bath-towel@2",
+      "position": [
+        -0.23,
+        0.01199,
+        0.4525
+      ],
+      "rotation": [
+        0,
+        0.069756,
+        0,
+        0.997564
+      ]
+    },
+    {
+      "asset": "mattashes/pedestal-basin@1",
+      "position": [
+        1.32,
+        0,
+        -0.3975
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/toilet@1",
+      "position": [
+        -1.38,
+        0,
+        -0.3175
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "asset": "mattashes/toothbrush-mug@1",
+      "position": [
+        -1.45,
+        0.79499,
+        -0.5375
+      ],
+      "rotation": [
+        0,
+        0.173648,
+        0,
+        0.984808
+      ]
+    },
+    {
+      "asset": "mattashes/snake-plant@1",
+      "position": [
+        1.32,
+        0,
+        0.5025
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    }
+  ]
+}
