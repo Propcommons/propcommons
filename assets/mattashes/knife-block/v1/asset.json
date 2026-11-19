@@ -1,0 +1,26 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/knife-block",
+  "version": 1,
+  "name": "Knife block with knives",
+  "license": "CC0-1.0",
+  "size_class": "small",
+  "tags": [
+    "kitchen",
+    "knife",
+    "wood"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "directed"
+      ]
+    }
+  ],
+  "ai_assisted": true,
+  "tools": [
+    "glTF-Transform",
+    "Claude Opus 5.5"
+  ]
+}
