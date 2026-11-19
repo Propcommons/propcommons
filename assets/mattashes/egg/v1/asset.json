@@ -1,0 +1,26 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/egg",
+  "version": 1,
+  "name": "Egg, brown",
+  "license": "CC0-1.0",
+  "size_class": "small",
+  "tags": [
+    "food",
+    "kitchen",
+    "egg"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "directed"
+      ]
+    }
+  ],
+  "ai_assisted": true,
+  "tools": [
+    "glTF-Transform",
+    "Claude Opus 5.5"
+  ]
+}
