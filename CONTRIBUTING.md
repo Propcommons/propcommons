@@ -116,8 +116,9 @@ detail belongs in the normal map, not in extra triangles.
 
 ## 4a. With a coding agent
 
-The repository includes a local MCP server with six tools: `get_spec`, `init_asset`, `validate`,
-`render_preview`, `search_assets` and `submit`. [AGENTS.md](AGENTS.md) has the setup for any
+The repository includes a local MCP server with seven tools: `get_spec`, `init_asset`, `validate`,
+`render_preview`, `search_assets`, `compose_scene` (lays out and settles a scene from library
+assets) and `submit`. [AGENTS.md](AGENTS.md) has the setup for any
 client. With Claude Code, run this once in the `propcommons` folder:
 
 ```bash

@@ -2,11 +2,11 @@
 // Runs locally from a clone of the repository and speaks stdio. It makes no network calls except
 // through `submit`, which uses the contributor's own `gh` login.
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { renderPreviews } from "@propcommons/preview";
+import { renderCompositionImage, renderPreviews } from "@propcommons/preview";
 import {
   ASSET_SCHEMA,
   BUDGETS,
@@ -22,6 +22,7 @@ import {
   UsageError,
   validateFolder,
 } from "@propcommons/validator";
+import { settleComposition } from "propcommons/settle";
 import { z } from "zod";
 
 const DATA_NOTE =
@@ -289,6 +290,142 @@ export function createServer(o: ServerOptions): McpServer {
         .filter((w) => !tag || w.tags?.includes(tag))
         .filter((w) => matches([w.id ?? "", w.name ?? "", ...(w.tags ?? [])]));
       return json({ note: DATA_NOTE, merged_ref: ref, assets, wanted });
+    },
+  );
+
+  server.registerTool(
+    "compose_scene",
+    {
+      title: "Build a scene from library assets",
+      description:
+        "Writes a composition from a list of placements, lowers every item onto whatever is under it (the ground, a table, a shelf: the same rule as `propcommons settle`), centres the scene, validates it and renders a picture. Give x and z for the centre of each item's footprint, y as the height of the surface it stands on (0 for the floor, about 0.75 on a kitchen table; it only needs to be roughly right, never well above the surface), and turn in degrees anticlockwise seen from above (at 0 an item faces +Z). Use search_assets for the IDs and sizes. It writes compositions/<author>/<slug>/v<N>/composition.json, reusing the newest version folder if it isn't merged yet, so call it again to adjust the layout. Publish it with submit like an asset.",
+      inputSchema: z.strictObject({
+        author: z.string().describe("The contributor's GitHub handle, lower case."),
+        slug: z
+          .string()
+          .describe("Lower-case letters, digits and hyphens, e.g. breakfast-for-two."),
+        name: z.string().describe("Display name in English, up to 80 characters."),
+        tags: z.array(z.string()).optional().describe("1 to 10 lower-case tags."),
+        ai_assisted: z
+          .boolean()
+          .describe("True if any AI tool (including you, the agent) chose any of the layout."),
+        tools: z.array(z.string()).min(1).describe('Software and AI models used, e.g. ["Claude"].'),
+        items: z
+          .array(
+            z.strictObject({
+              asset: z.string().describe("A pinned asset ID, e.g. alice/kitchen-table@1."),
+              x: z.number(),
+              z: z.number(),
+              y: z.number().optional().describe("Height of the surface it stands on; default 0."),
+              turn: z.number().optional().describe("Degrees about the vertical axis; default 0."),
+              scale: z.number().optional(),
+            }),
+          )
+          .min(2)
+          .describe("Bottom of the pile first is clearest, but any order works."),
+      }),
+    },
+    async ({ author, slug, name, tags, ai_assisted, tools, items }) => {
+      try {
+        if (
+          !/^[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?$/.test(author) ||
+          !/^[a-z0-9][a-z0-9-]{0,62}$/.test(slug)
+        )
+          return text("author and slug must be lower-case letters, digits and hyphens.", true);
+        const base = path.join(root, "compositions", author, slug);
+        let version = 1;
+        while (existsSync(path.join(base, `v${version + 1}`))) version++;
+        if (existsSync(path.join(base, `v${version}`))) {
+          const ref = mergedRef(root);
+          const rel = `compositions/${author}/${slug}/v${version}/composition.json`;
+          const merged = ref && git(root, ["cat-file", "-e", `${ref}:${rel}`]) !== null;
+          if (merged) version++;
+        }
+        const dir = path.join(base, `v${version}`);
+        mkdirSync(dir, { recursive: true });
+        const half = (deg: number) => (deg * Math.PI) / 360;
+        const composition = {
+          spec: rulesFile.spec,
+          id: `${author}/${slug}`,
+          version,
+          name,
+          license: "CC0-1.0",
+          ...(tags?.length ? { tags } : {}),
+          credits: [{ github: author, roles: ["directed"] }],
+          ai_assisted,
+          tools,
+          items: items.map((i) => ({
+            asset: i.asset,
+            position: [i.x, i.y ?? 0, i.z],
+            rotation: [0, Math.sin(half(i.turn ?? 0)), 0, Math.cos(half(i.turn ?? 0))].map(
+              (v) => Math.round(v * 1e6) / 1e6 + 0,
+            ),
+            ...(i.scale !== undefined && i.scale !== 1 ? { scale: i.scale } : {}),
+          })),
+        };
+        writeFileSync(
+          path.join(dir, "composition.json"),
+          `${JSON.stringify(composition, null, 2)}\n`,
+        );
+        const settled = await settleComposition(dir, { root });
+        const result = await validateFolder(dir, { root });
+        const rel = path.relative(root, dir).split(path.sep).join("/");
+        const content: Content[] = [];
+        const summary = {
+          path: rel,
+          pass: result.pass,
+          items: settled.items.map((s) => ({
+            asset: s.asset,
+            y: s.to,
+            rests_on:
+              s.restsOn === "ground"
+                ? "ground"
+                : `${s.restsOn} (${settled.items[s.restsOn - 1]?.asset})`,
+          })),
+          errors: result.results.filter((r) => r.level === "error"),
+          note: "Look at the picture: check nothing overlaps, items face the right way, and things sit where you meant. rests_on gives each item's support by its position in the list.",
+        };
+        content.push({ type: "text", text: JSON.stringify(summary, null, 2) });
+        if (result.pass) {
+          const index = await buildIndex(root);
+          const byRef = new Map(index.assets.map((a) => [a.ref, a]));
+          const outFile = path.join(
+            root,
+            "previews",
+            "compositions",
+            author,
+            slug,
+            `v${version}`,
+            "scene.png",
+          );
+          mkdirSync(path.dirname(outFile), { recursive: true });
+          await renderCompositionImage(
+            settled.composition.items.map((i) => ({
+              model: path.join(root, byRef.get(i.asset)?.files?.model as string),
+              position: i.position,
+              rotation: i.rotation,
+              ...(typeof i.scale === "number" ? { scale: i.scale } : {}),
+            })),
+            outFile,
+          );
+          content.push({
+            type: "image",
+            data: readFileSync(outFile).toString("base64"),
+            mimeType: "image/png",
+          });
+          content.push({
+            type: "text",
+            text: `The picture is saved as ${path.relative(root, outFile).split(path.sep).join("/")}: give the person that path so they can look too.`,
+          });
+        }
+        return { content, isError: !result.pass };
+      } catch (e) {
+        if (e instanceof CannotValidate || e instanceof UsageError) return text(e.message, true);
+        return text(
+          `Could not build the scene: ${e instanceof Error ? e.message : String(e)}`,
+          true,
+        );
+      }
     },
   );
 

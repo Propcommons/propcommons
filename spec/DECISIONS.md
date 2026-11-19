@@ -324,7 +324,7 @@ up and still pass.
   the bench top is above the box); otherwise the earlier rule decides, so every published scene
   settles exactly as before.
 - **It centres the footprint** too (CMP-CENTER), unless `--no-center`. It is a command-line tool
-  only; the MCP server's six tools are unchanged, and agents run it from the shell.
+  only at first; the MCP server's `compose_scene` (added 19 November) now runs it too.
 
 ## Glass in Godot (19 November 2026)
 
@@ -414,3 +414,12 @@ up and still pass.
 - **Script and stylesheet links carry a fingerprint** (`?v=` and the first 10 hex characters of
   a hash of `static/` and `stage.js`), so a deploy reaches visitors at once; GitHub Pages lets
   browsers keep files for ten minutes, and testing the Studio ran the previous script.
+
+## Agents build scenes: `compose_scene` (19 November 2026)
+
+- **A seventh MCP tool.** An agent gives placements (asset, x, z, y as the height of the surface
+  under it, turn in degrees) and gets back the written composition, each item's resting height
+  and what it rests on, the validation result and a picture. It writes the newest version folder
+  again while that isn't merged (so an agent can adjust and call again) and starts the next
+  version once it is. It uses `propcommons settle` itself, so the CLI, the Studio and agents all
+  place things by one rule. Publishing still goes through `submit` and the sign-off.

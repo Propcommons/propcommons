@@ -74,9 +74,10 @@ afterAll(async () => {
 });
 
 describe("MCP server", () => {
-  it("lists exactly the six tools", async () => {
+  it("lists exactly the seven tools", async () => {
     const { tools } = await client.listTools();
     expect(tools.map((t) => t.name).sort()).toEqual([
+      "compose_scene",
       "get_spec",
       "init_asset",
       "render_preview",
@@ -155,6 +156,44 @@ describe("MCP server", () => {
     expect(r.isError).toBe(true);
     expect(textOf(r)).toContain('Unrecognized key: "query"');
   });
+
+  it("compose_scene writes, settles, validates and pictures a scene, then updates it", async () => {
+    const args = {
+      author: "carol",
+      slug: "two-lemons",
+      name: "Two lemons",
+      ai_assisted: true,
+      tools: ["Claude"],
+      items: [
+        { asset: "alice/mug@1", x: 0, z: 0, y: 0.3 },
+        { asset: "alice/mug@1", x: 0.12, z: 0, turn: 90 },
+      ],
+    };
+    const r = await call("compose_scene", args);
+    expect(r.isError).toBeFalsy();
+    const summary = JSON.parse(textOf(r));
+    expect(summary).toMatchObject({ path: "compositions/carol/two-lemons/v1", pass: true });
+    // Dropped from 0.3 onto the ground, not left floating.
+    expect(summary.items.map((i: { y: number; rests_on: string }) => [i.y, i.rests_on])).toEqual([
+      [0, "ground"],
+      [0, "ground"],
+    ]);
+    expect(r.content.filter((c) => c.type === "image")).toHaveLength(1);
+    const written = JSON.parse(
+      readFileSync(path.join(repo, summary.path, "composition.json"), "utf8"),
+    );
+    expect(written.items[1].rotation[1]).toBeCloseTo(Math.SQRT1_2, 5);
+    // Not merged yet, so calling again updates the same version.
+    const again = JSON.parse(textOf(await call("compose_scene", { ...args, name: "Lemons" })));
+    expect(again.path).toBe("compositions/carol/two-lemons/v1");
+    // An unknown asset fails validation and says which rule.
+    const bad = await call("compose_scene", {
+      ...args,
+      slug: "missing",
+      items: [...args.items, { asset: "nobody/nothing@1", x: 1, z: 0 }],
+    });
+    expect(bad.isError).toBe(true);
+  }, 120_000);
 
   it("render_preview returns four PNG images", async () => {
     const r = await call("render_preview", { folder: "assets/alice/mug/v1" });

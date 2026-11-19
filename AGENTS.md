@@ -46,16 +46,17 @@ are set.
 
 ### With the MCP server
 
-The server runs locally from your clone, over stdio. It has six tools:
+The server runs locally from your clone, over stdio. It has seven tools:
 
-| Tool             | What it does                                                                                      |
-| ---------------- | ------------------------------------------------------------------------------------------------- |
-| `get_spec`       | Rules, budgets and both schemas as JSON. Read this first.                                         |
-| `init_asset`     | Creates `assets/<author>/<slug>/v1` from the template.                                            |
-| `validate`       | Returns the validator's result object: every failed rule, what was measured, the limit and a fix. |
-| `render_preview` | The four preview images a reviewer will see.                                                      |
-| `search_assets`  | Merged assets and open `wanted.json` entries.                                                     |
-| `submit`         | Opens the pull request with the contributor's own `gh` login, after their sign-off.               |
+| Tool             | What it does                                                                                        |
+| ---------------- | --------------------------------------------------------------------------------------------------- |
+| `get_spec`       | Rules, budgets and both schemas as JSON. Read this first.                                           |
+| `init_asset`     | Creates `assets/<author>/<slug>/v1` from the template.                                              |
+| `validate`       | Returns the validator's result object: every failed rule, what was measured, the limit and a fix.   |
+| `render_preview` | The four preview images a reviewer will see.                                                        |
+| `search_assets`  | Merged assets and open `wanted.json` entries.                                                       |
+| `compose_scene`  | Builds a composition from placements, settles it onto surfaces, validates it and renders a picture. |
+| `submit`         | Opens the pull request with the contributor's own `gh` login, after their sign-off.                 |
 
 **Claude Code** (run in the repository root):
 

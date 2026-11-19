@@ -11,6 +11,7 @@
     "@modelcontextprotocol/sdk": "1.32.2",
     "@propcommons/preview": "0.0.0",
     "@propcommons/validator": "0.0.0",
+    "propcommons": "0.0.0",
     "zod": "4.6.7"
   },
   "bin": {
