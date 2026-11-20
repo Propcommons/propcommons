@@ -171,6 +171,14 @@ describe("site", () => {
     expect(mug).toContain("of 5,000");
   });
 
+  it("shows a still picture while the 3D viewer loads, and leaves scrolling to the page", () => {
+    const mug = read("assets/alice/mug/v2/index.html");
+    expect(mug).toContain('poster="/propcommons/previews/alice/mug/v2/thumb.png"');
+    expect(mug).toMatch(/<model-viewer[^>]* camera-controls disable-zoom /);
+    expect(read("static/site.js")).toContain('removeAttribute("disable-zoom")');
+    expect(read("static/composition.js")).toContain("controls.enableZoom = false");
+  });
+
   it("serves its own typeface and nothing from another site", () => {
     expect(existsSync(path.join(out, "vendor/fonts/archivo-latin-wdth-normal.woff2"))).toBe(true);
     expect(existsSync(path.join(out, "vendor/fonts/LICENSE"))).toBe(true);
@@ -221,6 +229,11 @@ describe("site", () => {
     expect(h).toContain('<script type="importmap">');
     expect(h).toMatch(/src="\/propcommons\/static\/studio.js\?v=[0-9a-f]{10}"/);
     expect(h).toContain('id="viewport"');
+    // The ways to share a scene are in one menu, and the tools for a selected prop sit with it.
+    expect(h).toMatch(
+      /<div class="menu-list" id="share-menu" popover>\s*<button type="button" id="picture"/,
+    );
+    expect(h).toMatch(/id="inspector" hidden>[\s\S]*?id="turn-left"[\s\S]*?id="delete"/);
     expect(read("index.html")).toContain('href="/propcommons/studio/"');
     expect(read("compositions/alice/pair/v1/index.html")).toContain(
       'href="/propcommons/studio/?scene=alice%2Fpair%401"',

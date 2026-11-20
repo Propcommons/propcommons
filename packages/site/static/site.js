@@ -46,6 +46,13 @@ for (const b of document.querySelectorAll("[data-disconnect]"))
 setTool(store.get("pc-tool") ?? "claude");
 setConnected(store.get("pc-connected") === "1");
 
+// The 3D viewer zooms on scroll only after a click, so scrolling down the page never gets stuck
+// in it. Leaving it with the pointer (or lifting your fingers) hands scrolling back to the page.
+for (const viewer of document.querySelectorAll("model-viewer[disable-zoom]")) {
+  viewer.addEventListener("pointerdown", () => viewer.removeAttribute("disable-zoom"));
+  viewer.addEventListener("pointerleave", () => viewer.setAttribute("disable-zoom", ""));
+}
+
 // Plain tab groups: buttons with data-tab show the panel with the matching data-panel.
 for (const group of document.querySelectorAll("[data-tabs]")) {
   const tabs = [...group.querySelectorAll("[data-tab]")];

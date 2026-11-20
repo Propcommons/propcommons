@@ -406,6 +406,34 @@ export async function renderFlatViews(
   }
 }
 
+/**
+ * A close-up of each model alone on the plain stage, three-quarter front, with nothing behind
+ * it: plain.webp (1024 px) and plain-card.webp (384 px) in each job's outDir. The site uses these
+ * for glass props, whose review thumbnail has a striped card behind the glass.
+ */
+export async function renderPlainViews(jobs: { model: string; outDir: string }[]): Promise<void> {
+  if (!jobs.length) return;
+  const { browser, page, errors } = await openScenePage(
+    jobs.map((j, i): [string, string] => [`/files/p${i}.glb`, path.resolve(j.model)]),
+  );
+  try {
+    for (const [i, job] of jobs.entries()) {
+      const r = (await page.evaluate(
+        (j) =>
+          (
+            window as unknown as { renderPlain(j: unknown): Promise<Record<string, string>> }
+          ).renderPlain(j),
+        { url: `/files/p${i}.glb`, size: 1024, small: 384 },
+      )) as { image: string; small: string };
+      if (errors.length) throw new Error(`The preview page failed: ${errors.join("; ")}`);
+      saveWebp(path.join(job.outDir, "plain.webp"), r.image);
+      saveWebp(path.join(job.outDir, "plain-card.webp"), r.small);
+    }
+  } finally {
+    await browser.close();
+  }
+}
+
 export interface RowItem {
   /** What the item is called in the result, e.g. an asset ID. */
   id: string;

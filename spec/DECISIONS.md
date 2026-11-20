@@ -537,5 +537,15 @@ better one. The redesign changes both.
   copied into `vendor/fonts` with its licence. The site still loads nothing from another origin.
 - **Words.** "Library" became "Catalogue" and "Compositions" became "Scenes" in the site's
   navigation and prose. The spec, file names and URLs still say composition.
-- **Not done:** the Studio only took the new colours and shapes (its toolbar is unchanged), and
-  the glass props' gallery pictures still have the striped card behind them.
+- **Glass props get a plain close-up for the catalogue** (`renderPlainViews`): the glass alone on
+  the stage, pale, with its shadow showing through. Their review thumbnail keeps the striped card
+  behind the glass, which is for a reviewer judging the material. It is rendered by `flat.js`, not
+  `render.js`, because every preview's cache key includes `render.js` and re-rendering all of them
+  would outlast the deploy's time limit.
+- **The 3D viewers show a still picture while they load and don't take over scrolling.** The asset
+  viewer's poster is the prop's close-up, and it opens at the same three-quarter angle. Scroll
+  zooms only after a click on the viewer and until the pointer leaves it, on asset and scene
+  pages alike, so scrolling down a page never stops at the viewer.
+- **The Studio's toolbar is grouped**: scene, history and view as joined button groups, the three
+  ways to share in one menu (a popover, so no script), Download .glb as the one primary button,
+  and the tools for a selected prop (turn, duplicate, delete) in the box that appears with it.

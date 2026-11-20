@@ -21,6 +21,7 @@ import {
   type RowLayout,
   renderCompositionImage,
   renderFlatViews,
+  renderPlainViews,
   renderPreviews,
   renderRow,
   THREE_DIR,
@@ -170,6 +171,9 @@ async function ensureCompositionPreviews(o: SiteOptions, index: Index) {
 function cardImage(o: SiteOptions, a: IndexAsset): string | undefined {
   const thumb = a.previews?.thumb;
   if (!thumb) return thumb;
+  // Glass props: the plain close-up, not the review thumbnail with a striped card behind it.
+  if (existsSync(path.join(o.root, "previews", a.id, `v${a.version}`, "plain-card.webp")))
+    return thumb.replace(/thumb\.png$/, "plain-card.webp");
   const card = thumb.replace(/thumb\.png$/, "card.webp");
   return card !== thumb &&
     existsSync(path.join(o.root, "previews", a.id, `v${a.version}`, "card.webp"))
@@ -458,7 +462,7 @@ ${row ? lineupFigure(o, index, row) : ""}
 <div class="cat-head" id="catalogue">
   <div>
     <h2>Catalogue</h2>
-    <p><span class="num" id="count">${live.length}</span> props${needy ? html`, ${needy} with an obvious weak spot` : ""}. Sizes are width × height × depth.</p>
+    <p><span class="num" id="count">${live.length}</span> props. Sizes are width × height × depth.</p>
   </div>
   <form class="tools" id="filters" aria-label="Filter the catalogue">
     <input type="search" name="q" placeholder="Search props" aria-label="Search props" autocomplete="off">
@@ -468,7 +472,7 @@ ${row ? lineupFigure(o, index, row) : ""}
       <button type="button" data-size="medium" aria-pressed="false">Medium</button>
       <button type="button" data-size="large" aria-pressed="false">Large</button>
     </div>
-    <label class="toggle"><input type="checkbox" name="need"> Needs work</label>
+    <label class="toggle"><input type="checkbox" name="need"> Needs work${needy ? html` <span class="num">${needy}</span>` : ""}</label>
     <select name="ai" aria-label="How it was made"><option value="">Made any way</option><option value="yes">AI-assisted</option><option value="no">Made by hand</option></select>
   </form>
 </div>
@@ -558,6 +562,43 @@ function newBrief(index: Index): string {
     "Kits, so a new prop can match the ones it will stand next to:",
     ...kitLines(index, KITS).map((k) => `- ${k}`),
   ].join("\n");
+}
+
+/** The still picture the 3D viewer shows while the model loads: the close-up of the prop alone. */
+function posterImage(o: SiteOptions, a: IndexAsset): string | undefined {
+  const thumb = a.previews?.thumb;
+  if (!thumb) return thumb;
+  return existsSync(path.join(o.root, "previews", a.id, `v${a.version}`, "plain.webp"))
+    ? thumb.replace(/thumb\.png$/, "plain.webp")
+    : thumb;
+}
+
+/**
+ * Glass props get a plain close-up for the catalogue and the viewer's poster. Their review
+ * thumbnail stands the glass in front of a striped card, which a reviewer needs and a catalogue
+ * doesn't. A prop that uses glTF extensions (only the glass ones are allowed) has a fallback.png.
+ */
+async function ensurePlainViews(o: SiteOptions, index: Index) {
+  const scene = ["stage.js", "flat.js"].map((f) => readFileSync(path.join(SCENE_DIR, f), "utf8"));
+  const stale: { model: string; outDir: string; key: string }[] = [];
+  for (const a of index.assets) {
+    if (a.taken_down || !a.files) continue;
+    const outDir = path.join(o.root, "previews", a.id, `v${a.version}`);
+    if (!existsSync(path.join(outDir, "fallback.png"))) continue;
+    const key = createHash("sha256")
+      .update(JSON.stringify([a.sha256, scene]))
+      .digest("hex");
+    const keyFile = path.join(outDir, ".plainkey");
+    const fresh =
+      existsSync(keyFile) &&
+      readFileSync(keyFile, "utf8") === key &&
+      ["plain.webp", "plain-card.webp"].every((f) => existsSync(path.join(outDir, f)));
+    if (!fresh) stale.push({ model: path.join(o.root, a.files.model), outDir, key });
+  }
+  if (!stale.length) return;
+  o.log?.(`rendering plain close-ups for ${stale.length} glass props`);
+  await renderPlainViews(stale);
+  for (const s of stale) writeFileSync(path.join(s.outDir, ".plainkey"), s.key);
 }
 
 /** An asset's flat views (front, side, top at one scale), when the build has rendered them. */
@@ -726,8 +767,8 @@ function assetPage(o: SiteOptions, index: Index, a: IndexAsset): string {
 
 <div class="sheet">
   <div>
-    <div class="viewer"><model-viewer src="${o.base}${a.files?.model}" alt="3D view of ${m.name}" camera-controls touch-action="pan-y" shadow-intensity="1" shadow-softness="0.8" environment-image="${o.base}scene/studio.hdr" exposure="1" tone-mapping="neutral"></model-viewer></div>
-    <p class="hint">Drag to turn it. Scroll or pinch to zoom.</p>
+    <div class="viewer"><model-viewer src="${o.base}${a.files?.model}" alt="3D view of ${m.name}" poster="${o.base}${posterImage(o, a)}" camera-orbit="35deg 68deg auto" camera-controls disable-zoom touch-action="pan-y" shadow-intensity="1" shadow-softness="0.8" environment-image="${o.base}scene/studio.hdr" exposure="1" tone-mapping="neutral"></model-viewer></div>
+    <p class="hint">Drag to turn it. To zoom, click it first, then scroll; or pinch on a touch screen.</p>
   </div>
   <aside class="plate" aria-label="Details">
     ${
@@ -938,33 +979,44 @@ function studioPage(o: SiteOptions, index: Index, repo: string): string {
     <div class="toolbar" role="toolbar" aria-label="Scene tools">
       <label class="visually-hidden" for="scene-name">Scene name</label>
       <input id="scene-name" class="scene-name" value="Untitled scene" maxlength="80">
-      <button type="button" id="new">New</button>
-      <button type="button" id="describe" title="Describe a scene in words and have an AI assistant lay it out">Describe…</button>
-      <label class="visually-hidden" for="open">Open a published scene</label>
-      <select id="open"><option value="">Open a scene (${scenes})…</option></select>
-      <label class="button-like">Open file<input id="open-file" type="file" accept=".json,application/json" hidden></label>
-      <span class="sep" aria-hidden="true"></span>
-      <button type="button" id="undo" title="Undo (Ctrl/Cmd+Z)">Undo</button>
-      <button type="button" id="redo" title="Redo (Shift+Ctrl/Cmd+Z)">Redo</button>
-      <span class="sep" aria-hidden="true"></span>
-      <button type="button" id="turn-left" title="Turn left 15° (Q; Shift+Q for 90°)">↺ Turn</button>
-      <button type="button" id="turn-right" title="Turn right 15° (E; Shift+E for 90°)">Turn ↻</button>
-      <button type="button" id="duplicate" title="Duplicate (Ctrl/Cmd+D)">Duplicate</button>
-      <button type="button" id="delete" title="Delete (Delete key)">Delete</button>
+      <div class="tool-group" role="group" aria-label="Scene">
+        <button type="button" id="new">New</button>
+        <button type="button" id="describe" title="Describe a scene in words and have an AI assistant lay it out">Describe…</button>
+        <label class="visually-hidden" for="open">Open a published scene</label>
+        <select id="open"><option value="">Open a scene (${scenes})…</option></select>
+        <label class="button-like">Open file<input id="open-file" type="file" accept=".json,application/json" hidden></label>
+      </div>
+      <div class="tool-group" role="group" aria-label="History">
+        <button type="button" id="undo" title="Undo (Ctrl/Cmd+Z)">Undo</button>
+        <button type="button" id="redo" title="Redo (Shift+Ctrl/Cmd+Z)">Redo</button>
+      </div>
       <span class="spacer"></span>
-      <button type="button" id="grid" aria-pressed="true" title="Show the floor grid (squares are 50 cm)">Grid</button>
-      <button type="button" id="snap" aria-pressed="false" title="Snap positions to 5 cm (hold Shift to flip it for one move)">Snap</button>
-      <button type="button" id="frame" title="Fit the scene in view (F)">Fit view</button>
-      <button type="button" id="help" title="Controls and shortcuts (?)" aria-label="Help">?</button>
-      <button type="button" id="picture" title="Save a picture of the view">Picture</button>
-      <button type="button" id="share" title="Copy a link that opens this scene">Share link</button>
-      <button type="button" id="export-json" title="Download composition.json, to publish the scene">composition.json</button>
+      <div class="tool-group" role="group" aria-label="View">
+        <button type="button" id="grid" aria-pressed="true" title="Show the floor grid (squares are 50 cm)">Grid</button>
+        <button type="button" id="snap" aria-pressed="false" title="Snap positions to 5 cm (hold Shift to flip it for one move)">Snap</button>
+        <button type="button" id="frame" title="Fit the scene in view (F)">Fit view</button>
+        <button type="button" id="help" title="Controls and shortcuts (?)" aria-label="Help">?</button>
+      </div>
+      <button type="button" id="share-open" popovertarget="share-menu" aria-haspopup="menu">Share</button>
+      <div class="menu-list" id="share-menu" popover>
+        <button type="button" id="picture" popovertarget="share-menu" popovertargetaction="hide">Save a picture of the view</button>
+        <button type="button" id="share" popovertarget="share-menu" popovertargetaction="hide">Copy a link to this scene</button>
+        <button type="button" id="export-json" popovertarget="share-menu" popovertargetaction="hide">Download composition.json, to publish it</button>
+      </div>
       <button type="button" class="primary" id="export-glb" title="Download the whole scene as one glTF file">Download .glb</button>
     </div>
     <div class="viewport-wrap">
       <canvas id="viewport" aria-label="3D scene: drag props to move them, drag empty space to look around"></canvas>
       <div class="empty-state" id="empty"><h2>Build a scene</h2><p>Pick a prop on the left, then click on the floor to place it. Props land on whatever is under them: put a table down first, then a plate on it.</p><p><button type="button" class="primary" id="try-scene">Start from a ready-made scene</button></p></div>
-      <div class="inspector" id="inspector" hidden><a id="insp-name" href="#"></a><span id="insp-meta" class="muted"></span></div>
+      <div class="inspector" id="inspector" hidden>
+        <a id="insp-name" href="#"></a><span id="insp-meta" class="muted"></span>
+        <div class="tool-group" role="group" aria-label="The selected prop">
+          <button type="button" id="turn-left" title="Turn left 15° (Q; Shift+Q for 90°)">↺ Turn</button>
+          <button type="button" id="turn-right" title="Turn right 15° (E; Shift+E for 90°)">Turn ↻</button>
+          <button type="button" id="duplicate" title="Duplicate (Ctrl/Cmd+D)">Duplicate</button>
+          <button type="button" id="delete" title="Delete (Delete key)">Delete</button>
+        </div>
+      </div>
       <p class="toast" id="toast" role="status" hidden></p>
     </div>
     <div class="statusbar"><span id="hint">Loading…</span><span id="count" class="muted"></span></div>
@@ -1197,6 +1249,7 @@ export async function buildSite(o: SiteOptions): Promise<Index> {
     await ensurePreviews(o, index);
     await ensureCompositionPreviews(o, index);
     await ensureFlatViews(o, index);
+    await ensurePlainViews(o, index);
   }
   const row = o.previews ? await ensureLineup(o, index) : null;
 
@@ -1288,6 +1341,11 @@ export async function buildSite(o: SiteOptions): Promise<Index> {
         for (const v of FLAT_VIEWS) {
           const src = path.join(o.root, "previews", a.id, `v${a.version}`, `flat-${v}.webp`);
           if (existsSync(src)) copy(src, `${path.posix.dirname(a.previews.front)}/flat-${v}.webp`);
+        }
+      if (a.previews)
+        for (const f of ["plain.webp", "plain-card.webp"]) {
+          const src = path.join(o.root, "previews", a.id, `v${a.version}`, f);
+          if (existsSync(src)) copy(src, `${path.posix.dirname(a.previews.front)}/${f}`);
         }
       const card = path.join(o.root, "previews", a.id, `v${a.version}`, "card.webp");
       if (a.previews && existsSync(card))
