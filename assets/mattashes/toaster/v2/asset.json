@@ -1,0 +1,29 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/toaster",
+  "version": 2,
+  "name": "Toaster, two-slot",
+  "license": "CC0-1.0",
+  "size_class": "small",
+  "tags": [
+    "kitchen",
+    "appliance",
+    "toaster"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "directed"
+      ]
+    }
+  ],
+  "ai_assisted": true,
+  "tools": [
+    "Claude Opus 5.5",
+    "glTF-Transform"
+  ],
+  "parent": null,
+  "source_url": null,
+  "notes_url": null
+}
