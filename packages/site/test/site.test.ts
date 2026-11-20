@@ -132,8 +132,15 @@ describe("site", () => {
     expect(v2).toContain("Better versions");
     expect(v2).toContain('href="/propcommons/assets/bob/mug/v1/"');
     expect(read("assets/bob/mug/v1/index.html")).toContain("Derived from");
+    // The prompt's brief is about this asset, with its budget from spec/budgets.json.
+    const brief = /data-brief="([^"]*)"/.exec(v2)?.[1] ?? "";
+    expect(brief).toContain("Size class small: longest side 1 cm–30 cm; up to 5,000 triangles");
+    expect(brief).toContain("of its budget");
+    expect(brief).toMatch(/no textures|textures \d/);
+    expect(v2).toContain('data-path="assets/alice/mug/v2"');
     const make = read("contribute/index.html");
     expect(make).toContain('class="maker" data-kind="new"');
+    expect(make).toMatch(/data-brief="The library has \d+ props/);
     expect(existsSync(path.join(out, "static/make.js"))).toBe(true);
   });
 

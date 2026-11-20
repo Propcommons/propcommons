@@ -142,17 +142,22 @@ window.renderJob = async (job) => {
   row.push(asset);
   if (neighbours[1]) row.push(neighbours[1]);
   for (const n of neighbours) scene.add(n);
+  // Lay the row out across the camera's view (not along x), so seen from the three-quarter front
+  // nothing stands behind anything else: each one's footprint, projected across the view, sits
+  // beside the next with a gap.
+  const kitDir = viewDirection("front");
+  const across = new THREE.Vector3(kitDir.z, 0, -kitDir.x).normalize();
   const boxes = row.map((o) => boundsOf(o));
+  const halves = boxes.map((b) => halfExtentAlong(b, across));
   const spacing = Math.max(...boxes.map((b) => b.getSize(new THREE.Vector3()).length())) * 0.15;
-  const totalWidth =
-    boxes.reduce((w, b) => w + (b.max.x - b.min.x), 0) + spacing * (row.length - 1);
-  let x = -totalWidth / 2;
+  const totalWidth = halves.reduce((w, h) => w + 2 * h, 0) + spacing * (row.length - 1);
+  let s = -totalWidth / 2;
   row.forEach((o, i) => {
-    const b = boxes[i];
-    const c = b.getCenter(new THREE.Vector3());
-    o.position.x += x - b.min.x;
-    o.position.z -= c.z;
-    x += b.max.x - b.min.x + spacing;
+    const c = boxes[i].getCenter(new THREE.Vector3());
+    const at = s + halves[i];
+    o.position.x += across.x * at - c.x;
+    o.position.z += across.z * at - c.z;
+    s += 2 * halves[i] + spacing;
   });
   const kitBox = new THREE.Box3();
   for (const o of row) kitBox.union(boundsOf(o));
