@@ -306,7 +306,7 @@ function proxy(ws) {
     description: `Run this first if another tool says Prop Commons is not set up yet. It downloads the Prop Commons library and its tools into ${ws.dir} and installs them, including a small browser (about 200 MB) that draws the preview pictures. It changes nothing else on the computer and nothing on GitHub. The first run takes a few minutes: it returns progress, so call it again until it says Prop Commons is ready.`,
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
   };
-  const instructions = `If a tool answers that Prop Commons is not set up yet, call the setup tool (again and again until it says ready), then call the tool you wanted.\n\n${snapshot.instructions.replaceAll("{root}", ws.dir)}`;
+  const instructions = `Prop Commons is not set up on this computer yet, so start by calling the setup tool (again and again until it says ready). The folder named below, and the AGENTS.md in it, exist only after that.\n\n${snapshot.instructions.replaceAll("{root}", ws.dir)}`;
   const send = (msg) => process.stdout.write(`${JSON.stringify(msg)}\n`);
   const reply = (id, result) => send({ jsonrpc: "2.0", id, result });
 

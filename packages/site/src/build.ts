@@ -20,10 +20,12 @@ import {
   type FlatViews,
   type RowLayout,
   renderCompositionImage,
+  renderCutouts,
   renderFlatViews,
   renderPlainViews,
   renderPreviews,
   renderRow,
+  renderSceneCutout,
   THREE_DIR,
 } from "@propcommons/preview";
 import {
@@ -641,6 +643,75 @@ async function ensureFlatViews(o: SiteOptions, index: Index) {
 }
 
 /**
+ * Cut-outs: each prop alone on a transparent background with a soft shadow (cut.webp, and
+ * cut-card.webp for grids), so a page can stand it on any colour. Cached like the flat views,
+ * with a key of their own, so changing `cutout.js` re-renders these and nothing else.
+ */
+async function ensureCutouts(o: SiteOptions, index: Index) {
+  const scene = ["stage.js", "cutout.js"].map((f) => readFileSync(path.join(SCENE_DIR, f), "utf8"));
+  const stale: { model: string; outDir: string; key: string }[] = [];
+  for (const a of index.assets) {
+    if (a.taken_down || !a.files) continue;
+    const outDir = path.join(o.root, "previews", a.id, `v${a.version}`);
+    const key = createHash("sha256")
+      .update(JSON.stringify([a.sha256, scene]))
+      .digest("hex");
+    const keyFile = path.join(outDir, ".cutkey");
+    const fresh =
+      existsSync(keyFile) &&
+      readFileSync(keyFile, "utf8") === key &&
+      ["cut.webp", "cut-card.webp"].every((f) => existsSync(path.join(outDir, f)));
+    if (!fresh) stale.push({ model: path.join(o.root, a.files.model), outDir, key });
+  }
+  for (let i = 0; i < stale.length; i += 16) {
+    const batch = stale.slice(i, i + 16);
+    o.log?.(`rendering cut-outs: ${i + 1} to ${i + batch.length} of ${stale.length}`);
+    await renderCutouts(batch);
+    for (const s of batch) writeFileSync(path.join(s.outDir, ".cutkey"), s.key);
+  }
+}
+
+/** Where a composition's cut-out is kept, beside its scene.png. */
+const sceneCutPath = (preview: string) => preview.replace(/scene\.png$/, "scene-cut.webp");
+const cardOf = (file: string) => file.replace(/(\.[a-z]+)$/, "-card$1");
+
+/** The cut-out of every live composition: all its items in place, on a transparent background. */
+async function ensureSceneCutouts(o: SiteOptions, index: Index) {
+  const byRef = new Map(index.assets.map((a) => [a.ref, a]));
+  const scene = ["stage.js", "cutout.js"].map((f) => readFileSync(path.join(SCENE_DIR, f), "utf8"));
+  for (const c of index.compositions) {
+    if (c.taken_down || !c.preview) continue;
+    const items = c.items
+      .map((i) => ({ item: i, asset: byRef.get(i.asset) }))
+      .filter((x) => x.asset && !x.asset.taken_down && x.asset.files);
+    if (!items.length) continue;
+    const out = path.join(o.root, sceneCutPath(c.preview));
+    const key = createHash("sha256")
+      .update(JSON.stringify([c.items, items.map((x) => x.asset?.sha256), scene]))
+      .digest("hex");
+    const keyFile = `${out}.key`;
+    if (
+      existsSync(out) &&
+      existsSync(cardOf(out)) &&
+      existsSync(keyFile) &&
+      readFileSync(keyFile, "utf8") === key
+    )
+      continue;
+    o.log?.(`rendering the cut-out of ${c.ref}`);
+    await renderSceneCutout(
+      items.map((x) => ({
+        model: path.join(o.root, x.asset?.files?.model as string),
+        position: x.item.position,
+        rotation: x.item.rotation,
+        scale: x.item.scale,
+      })),
+      out,
+    );
+    writeFileSync(keyFile, key);
+  }
+}
+
+/**
  * The measured drawing: top, front and side at one scale, laid out as on a drawing sheet (top
  * above front, side beside it), with the width, height and depth as dimension lines.
  */
@@ -1250,6 +1321,8 @@ export async function buildSite(o: SiteOptions): Promise<Index> {
     await ensureCompositionPreviews(o, index);
     await ensureFlatViews(o, index);
     await ensurePlainViews(o, index);
+    await ensureCutouts(o, index);
+    await ensureSceneCutouts(o, index);
   }
   const row = o.previews ? await ensureLineup(o, index) : null;
 
@@ -1343,7 +1416,7 @@ export async function buildSite(o: SiteOptions): Promise<Index> {
           if (existsSync(src)) copy(src, `${path.posix.dirname(a.previews.front)}/flat-${v}.webp`);
         }
       if (a.previews)
-        for (const f of ["plain.webp", "plain-card.webp"]) {
+        for (const f of ["plain.webp", "plain-card.webp", "cut.webp", "cut-card.webp"]) {
           const src = path.join(o.root, "previews", a.id, `v${a.version}`, f);
           if (existsSync(src)) copy(src, `${path.posix.dirname(a.previews.front)}/${f}`);
         }
@@ -1358,6 +1431,9 @@ export async function buildSite(o: SiteOptions): Promise<Index> {
       copy(path.join(o.root, c.path, "composition.json"), `${c.path}/composition.json`);
     if (c.preview && existsSync(path.join(o.root, c.preview)))
       copy(path.join(o.root, c.preview), c.preview);
+    if (c.preview)
+      for (const f of [sceneCutPath(c.preview), cardOf(sceneCutPath(c.preview))])
+        if (existsSync(path.join(o.root, f))) copy(path.join(o.root, f), f);
     write(`${c.path}/index.html`, compositionPage(o, index, c));
   }
 

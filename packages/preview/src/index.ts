@@ -212,6 +212,7 @@ async function openScenePage(extra: [string, string][]) {
     ["/scene/render.html", path.join(SCENE_DIR, "render.html")],
     ["/scene/render.js", path.join(SCENE_DIR, "render.js")],
     ["/scene/flat.js", path.join(SCENE_DIR, "flat.js")],
+    ["/scene/cutout.js", path.join(SCENE_DIR, "cutout.js")],
     ["/scene/stage.js", path.join(SCENE_DIR, "stage.js")],
     ["/scene/studio.hdr", path.join(SCENE_DIR, "studio.hdr")],
     ...extra,
@@ -429,6 +430,76 @@ export async function renderPlainViews(jobs: { model: string; outDir: string }[]
       saveWebp(path.join(job.outDir, "plain.webp"), r.image);
       saveWebp(path.join(job.outDir, "plain-card.webp"), r.small);
     }
+  } finally {
+    await browser.close();
+  }
+}
+
+/**
+ * Each model alone, three-quarter front, on a transparent background with a soft shadow under it
+ * that fades away: cut.webp (1024 px) and cut-card.webp (512 px) in each job's outDir. The site
+ * stands these on any colour, where the review pictures bring their grey backdrop with them.
+ */
+export async function renderCutouts(
+  jobs: { model: string; outDir: string }[],
+  opts: { size?: number; small?: number } = {},
+): Promise<void> {
+  if (!jobs.length) return;
+  const { browser, page, errors } = await openScenePage(
+    jobs.map((j, i): [string, string] => [`/files/k${i}.glb`, path.resolve(j.model)]),
+  );
+  try {
+    for (const [i, job] of jobs.entries()) {
+      const r = (await page.evaluate(
+        (j) =>
+          (
+            window as unknown as { renderCutout(j: unknown): Promise<Record<string, string>> }
+          ).renderCutout(j),
+        { url: `/files/k${i}.glb`, size: opts.size ?? 1024, small: opts.small ?? 512 },
+      )) as { image: string; small: string };
+      if (errors.length) throw new Error(`The preview page failed: ${errors.join("; ")}`);
+      saveWebp(path.join(job.outDir, "cut.webp"), r.image);
+      saveWebp(path.join(job.outDir, "cut-card.webp"), r.small);
+    }
+  } finally {
+    await browser.close();
+  }
+}
+
+/**
+ * A composition as a cut-out: every item in place, on a transparent background with soft shadows.
+ * Writes `outFile` (a .webp, 1600 × 1000 unless `size` says otherwise) and a copy 800 px wide
+ * beside it, named with `-card` before the extension.
+ */
+export async function renderSceneCutout(
+  items: CompositionItem[],
+  outFile: string,
+  size = { width: 1600, height: 1000 },
+): Promise<void> {
+  const models = [...new Set(items.map((i) => path.resolve(i.model)))];
+  const { browser, page, errors } = await openScenePage(
+    models.map((m, i): [string, string] => [`/files/s${i}.glb`, m]),
+  );
+  try {
+    const r = (await page.evaluate(
+      (job) =>
+        (
+          window as unknown as { renderSceneCutout(j: unknown): Promise<Record<string, string>> }
+        ).renderSceneCutout(job),
+      {
+        ...size,
+        small: 800,
+        items: items.map((i) => ({
+          url: `/files/s${models.indexOf(path.resolve(i.model))}.glb`,
+          position: i.position,
+          rotation: i.rotation,
+          scale: i.scale ?? 1,
+        })),
+      },
+    )) as { image: string; small: string };
+    if (errors.length) throw new Error(`The preview page failed: ${errors.join("; ")}`);
+    saveWebp(outFile, r.image);
+    saveWebp(outFile.replace(/(\.[a-z]+)$/, "-card$1"), r.small);
   } finally {
     await browser.close();
   }

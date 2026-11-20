@@ -549,3 +549,20 @@ better one. The redesign changes both.
 - **The Studio's toolbar is grouped**: scene, history and view as joined button groups, the three
   ways to share in one menu (a popover, so no script), Download .glb as the one primary button,
   and the tools for a selected prop (turn, duplicate, delete) in the box that appears with it.
+
+### The connector, tried from nothing in Claude Code (20 November 2026)
+
+With the downloaded library, the npm and preview-browser caches and the connection all erased, a
+real Claude Code session was given the site's connect command and one sentence ("Use Prop Commons
+to improve mattashes/kettle…"). It set itself up, built `mattashes/kettle@2` with a generator
+script, took two rounds of feedback on the pictures and opened the pull request after the
+sign-off, in about fourteen minutes of its own time and with no permission it had to be given by
+hand beyond the tools it was started with.
+
+- **The launcher's first instruction now says the folder doesn't exist yet.** Both sessions tried
+  to read `AGENTS.md` in it before calling `setup`, got "file does not exist" and recovered.
+- **A full clone stays.** A newest-copy-only clone was tried to shorten the first download; the
+  repository is almost all current assets, so it saved about 1 MB of 26 and isn't worth a copy
+  that can't see history.
+- **Name and email for git can be set for the Prop Commons folder alone**, which `submit` reads;
+  the session did that when asked not to change the global setting.
