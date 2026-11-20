@@ -1,0 +1,26 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/kettle",
+  "version": 2,
+  "name": "Kettle, stovetop",
+  "license": "CC0-1.0",
+  "size_class": "small",
+  "tags": [
+    "kitchen",
+    "cookware",
+    "kettle"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "directed"
+      ]
+    }
+  ],
+  "ai_assisted": true,
+  "tools": [
+    "Claude Fable 5.2",
+    "glTF-Transform"
+  ]
+}
