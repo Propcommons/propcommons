@@ -57,6 +57,7 @@ npx propcommons validate assets/mattashes/lemon/v1
 | `packages/validator`            | The validator library that everything else uses                                                |
 | `packages/cli`                  | The `propcommons` command line: `validate`, `init`, `preview`, `check-pr`, `build-index`       |
 | `packages/mcp`                  | A local MCP server so coding agents can use the same tools                                     |
+| `tools/npm`                     | The `propcommons` package on npm: one command that connects an agent and sets everything up    |
 | `packages/preview`              | The reference scene and preview renderer                                                       |
 | `packages/site`                 | The static website                                                                             |
 | `tools/blender/export_asset.py` | A Blender script that exports a collection as a valid asset                                    |

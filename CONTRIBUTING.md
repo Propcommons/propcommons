@@ -132,6 +132,13 @@ client. With Claude Code, run this once in the `propcommons` folder:
 claude mcp add propcommons -- node packages/mcp/src/main.ts
 ```
 
+Without a clone, one command connects an agent and sets everything up in `~/propcommons` the first
+time it is used (see [AGENTS.md](AGENTS.md), Setup):
+
+```bash
+claude mcp add propcommons -- npx -y propcommons mcp
+```
+
 Then ask your agent something like:
 
 > Using the propcommons MCP tools, make a small asset `yourname/wooden-spoon`: a plain wooden

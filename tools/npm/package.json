@@ -1,0 +1,31 @@
+{
+  "name": "propcommons",
+  "version": "0.1.0",
+  "description": "Connect your AI to Prop Commons, an open library of free (CC0) game props: one command sets up the tools and an MCP server.",
+  "license": "MIT",
+  "type": "module",
+  "homepage": "https://propcommons.github.io/propcommons/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Propcommons/propcommons.git",
+    "directory": "tools/npm"
+  },
+  "keywords": [
+    "mcp",
+    "gltf",
+    "game-assets",
+    "cc0",
+    "3d"
+  ],
+  "bin": {
+    "propcommons": "launcher.js"
+  },
+  "files": [
+    "launcher.js",
+    "tools.json",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  }
+}

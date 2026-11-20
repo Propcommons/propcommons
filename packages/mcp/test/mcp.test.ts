@@ -88,6 +88,13 @@ describe("MCP server", () => {
     ]);
   });
 
+  it("tells a connecting agent where the folder is and how to start", () => {
+    const said = client.getInstructions() ?? "";
+    expect(said).toContain(`The Prop Commons folder on this computer is ${repo}.`);
+    expect(said).toContain("call improve_asset");
+    expect(said).toContain("Never call submit with signoff_confirmed true until");
+  });
+
   it("validate returns the same JSON as the command line, for every fixture", async () => {
     for (const c of cases) {
       const rel = path.relative(repo, c.folder);
@@ -153,6 +160,12 @@ describe("MCP server", () => {
       same_asset: false,
     });
     expect(r.original.bounds_m).toHaveLength(3);
+    // It hands the agent what the site's Improve prompt would: the folder, the brief, the steps.
+    expect(r.root).toBe(repo);
+    expect(r.brief).toContain("What the library knows about it:");
+    expect(r.brief).toContain("Size class small: longest side 1 cm–30 cm; up to 5,000 triangles");
+    expect(r.steps.join(" ")).toContain("render_preview on assets/alice/mug/v1");
+    expect(r.steps.at(-1)).toContain("only after their yes call submit");
     const manifest = JSON.parse(readFileSync(path.join(repo, r.path, "asset.json"), "utf8"));
     expect(manifest).toMatchObject({
       id: "dave/mug",

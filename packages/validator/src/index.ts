@@ -1,4 +1,5 @@
 // The Prop Commons validator library: one code path for the command line, MCP server and CI.
+export * from "./brief.ts";
 export * from "./glb.ts";
 export * from "./measure.ts";
 export * from "./paths.ts";

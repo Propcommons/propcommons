@@ -7,7 +7,8 @@
 //   propcommons check-pr --base <dir> --head <dir> --changed <file> --author <login> --body-file <file> [--json]
 //   propcommons build-index [--out index.json]
 //   propcommons settle <composition folder> [--dry-run] [--no-center] [--json]
-import { execFileSync } from "node:child_process";
+//   propcommons mcp
+import { execFileSync, spawn } from "node:child_process";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -52,6 +53,7 @@ Commands:
                             rests on the ground or an earlier item, and centre the scene.
                             Options: --dry-run, --no-center, --json
   build-index               Validate everything and write index.json. Option: --out <file>
+  mcp                       Start the MCP server for this clone (an AI tool runs this).
 
 Exit codes: 0 pass, 1 fail, 2 the tool could not run.`;
 
@@ -327,6 +329,18 @@ async function cmdPreview(args: string[]): Promise<number> {
   return renderPreviewsCli(args);
 }
 
+/** Starts this clone's MCP server on the same input and output, and waits for it to end. */
+function cmdMcp(args: string[]): Promise<number> {
+  const root = findRepoRoot(process.cwd());
+  const child = spawn(
+    process.execPath,
+    [path.join(root, "packages/mcp/src/main.ts"), "--root", root, ...args],
+    { stdio: "inherit" },
+  );
+  for (const signal of ["SIGINT", "SIGTERM"] as const) process.on(signal, () => child.kill(signal));
+  return new Promise((resolve) => child.on("exit", (code) => resolve(code ?? 0)));
+}
+
 export async function main(argv: string[]): Promise<number> {
   const [command, ...rest] = argv;
   try {
@@ -345,6 +359,8 @@ export async function main(argv: string[]): Promise<number> {
         return await cmdBuildIndex(rest);
       case "settle":
         return await cmdSettle(rest);
+      case "mcp":
+        return await cmdMcp(rest);
       case undefined:
       case "help":
       case "--help":

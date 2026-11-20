@@ -463,3 +463,40 @@ into `make.js`. "No lighting painted into textures" is guidance, not a rule the 
 
 The kit preview now lays its row out across the camera's view instead of along x, so from the
 three-quarter front nothing stands behind anything else.
+
+### One command to connect an AI (20 November 2026)
+
+The site's "Improve it" is the point of the project, and the way in was a long pasted prompt plus a
+fork, a clone and three commands. Now one command connects an agent:
+`claude mcp add propcommons -- npx -y propcommons mcp` (the same `npx` command for Codex and any
+other MCP client).
+
+- **The npm package is a launcher, not the tools.** `tools/npm` (the `propcommons` name on npm) is
+  one plain JavaScript file with no dependencies. The tools stay in the repository and run from a
+  copy of it, so there is still one code path and nothing to keep in step with a second build.
+  TypeScript can't run from inside `node_modules`, which rules out publishing the packages as they
+  are.
+- **A plain copy, not a fork.** `submit` already forks for the person and pushes from a clean
+  clone, so the working copy only has to be a clone of the main project. Connecting therefore needs
+  no GitHub account or login; `gh` is needed at `submit` only.
+- **`~/propcommons`, or `PROPCOMMONS_HOME`.** A folder the person can find, since their props and
+  the preview pictures are in it. `PROPCOMMONS_ROOT` points the launcher at a clone the person
+  looks after; it is then never downloaded, installed over or updated.
+- **Setup is a tool the agent calls, not something that happens on start.** Starting must be
+  instant (clients give a server seconds to start) and downloading several hundred megabytes should
+  be asked for. Before setup the launcher answers the agent itself: it lists every tool from a
+  snapshot (`tools/npm/tools.json`, checked by a test) plus `setup`, and any other call says to run
+  `setup` first. `setup` returns within half a minute with progress and is called again until it
+  says ready, because some clients give up on a tool call after 60 seconds. It then starts the real
+  server and passes every message through, so no restart is needed.
+- **The copy updates itself on start**, by fast-forward only, and only when it is on `main` with no
+  changed tracked files. The person's work is new, uncommitted folders, which a fast-forward leaves
+  alone. An uncommitted file that is byte-for-byte what has since been merged (their own published
+  prop) is removed first, since it would otherwise block every later update.
+- **`improve_asset` returns the brief and the steps**, so the line to paste can be one sentence
+  ("Use Prop Commons to improve mattashes/kettle"). The brief moved from the site into the
+  validator library (`brief.ts`), so the site's prompt and the tool say the same thing. The server
+  also sends instructions when an agent connects: where the folder is, how to start, and the
+  sign-off rule.
+- **Node.js 26.13 is still required** by the tools. The launcher itself starts on Node.js 20 and
+  says which version is needed.

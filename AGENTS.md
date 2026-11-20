@@ -20,7 +20,24 @@ depends on one vendor.
 
 ## Setup
 
-Requires Node.js 26.13 or later, git, and the GitHub CLI (`gh`) signed in with `gh auth login`
+**The short way: connect the person's AI with one command.** It needs Node.js 26.13 or later and
+git; the GitHub CLI (`gh`) is only needed later, to publish.
+
+```bash
+claude mcp add propcommons -- npx -y propcommons mcp
+```
+
+For Codex it is `codex mcp add propcommons -- npx -y propcommons mcp`; for any other MCP client,
+add a server with the command `npx` and the arguments `-y`, `propcommons`, `mcp`. The `propcommons`
+package on npm is a small launcher (`tools/npm`): the first time a tool is used it offers a `setup`
+tool, which downloads this repository into `~/propcommons` (or `PROPCOMMONS_HOME`), installs it and
+then hands over to the MCP server below. It keeps that copy up to date when it starts. Folder
+arguments and paths in results are relative to that folder, and `improve_asset` returns its full
+path as `root`. `npx propcommons setup` does the same from a terminal, and
+`npx propcommons validate …` and the other commands then run there.
+
+**The long way: your own clone**, for working on the tools or without the launcher. Requires
+Node.js 26.13 or later, git, and the GitHub CLI (`gh`) signed in with `gh auth login`
 (HTTPS, and "authenticate Git"). Work in a fork, so the person can push:
 
 ```bash
@@ -62,7 +79,8 @@ The server runs locally from your clone, over stdio. It has eight tools:
 | `compose_scene`  | Builds a composition from placements, settles it onto surfaces, validates it and renders a picture. |
 | `submit`         | Opens the pull request with the contributor's own `gh` login, after their sign-off.                 |
 
-**Claude Code** (run in the repository root):
+**Claude Code** (run in the repository root of your own clone; outside a clone, use the one
+command under Setup instead):
 
 ```bash
 claude mcp add propcommons -- node packages/mcp/src/main.ts
@@ -93,7 +111,8 @@ The server finds its clone on its own, so `--root` is only a safeguard. `PROPCOM
 too.
 
 **Improving an existing asset:** `improve_asset` with `from` set to its ID copies it as the
-starting point: the next version when the person is its author, otherwise a new asset under their
+starting point and returns what the library knows about the original (`brief`: its numbers
+against its budget, its kit, where it falls short) and the steps to follow: the next version when the person is its author, otherwise a new asset under their
 own handle whose `parent` names the original (its page then links to it). Look at the original
 with `render_preview` on its folder first, keep about the same size, and replace `model.glb`; a
 pull request whose model is unchanged from its parent is refused. Each asset page on the site has
