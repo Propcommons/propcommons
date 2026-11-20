@@ -448,3 +448,18 @@ up and still pass.
 - **Better versions are linked, not swapped in.** The original's page lists improvements under
   "Better versions"; both stay in the library as separate assets. Whether an improvement should
   replace the original in the gallery or the Studio is left for later.
+
+### Prompts that know the prop (19 November 2026)
+
+The Improve and Make-a-prop prompts no longer say only "make it better". The site build writes a
+brief into each builder from the index and `spec/budgets.json`: the prop's size class and budget,
+what it uses of it (triangles as a share, materials, textures, file size), its kit with other props
+in it (same size class first), the scenes it's in, its collision file and validator notes. From the
+numbers it lists where the prop falls short (no textures; under 30% of the triangle budget) and the
+limits to work within (over 85% of the triangle budget; every material used). The Make-a-prop brief
+has every size class's budget and every kit's props. The project's conventions follow in words
+(axes, resting pose, PBR, no lighting painted into textures, atlases); the numbers are never typed
+into `make.js`. "No lighting painted into textures" is guidance, not a rule the validator checks.
+
+The kit preview now lays its row out across the camera's view instead of along x, so from the
+three-quarter front nothing stands behind anything else.
