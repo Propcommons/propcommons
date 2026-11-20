@@ -58,9 +58,6 @@ const sha256Base64 = (s: string) => createHash("sha256").update(s).digest("base6
 
 let repoUrl = "https://github.com/";
 
-/** The brand mark: three faces of a box resting on the ground, in the accent colours. */
-const LOGO = `<svg class="logo" viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><path d="M16 3 28 9.5 16 16 4 9.5Z" fill="var(--accent-soft)"/><path d="M4 9.5 16 16v13L4 22.5Z" fill="var(--accent)"/><path d="M28 9.5 16 16v13l12-6.5Z" fill="var(--accent-strong)"/></svg>`;
-
 /** The repository's GitHub address, linked from every page's header and footer. */
 let assetVersion = "";
 /**
@@ -110,39 +107,17 @@ export function page(o: PageOptions): string {
   ].join("; ");
   const nav = (key: PageOptions["active"], href: string, label: string) =>
     html`<a href="${o.base}${href}"${raw(o.active === key ? ' aria-current="page"' : "")}>${label}</a>`;
-  const footer = html`<footer class="site">
-  <div class="wrap footer-grid">
-    <div>
-      <a class="brand" href="${o.base}">${raw(LOGO)}<span>Prop Commons</span></a>
-      <p class="muted">An open library of game props that fit together. Assets and compositions are <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a>: free for anything, no credit required.</p>
-    </div>
-    <div>
-      <h2>Library</h2>
-      <ul>
-        <li><a href="${o.base}">All assets</a></li>
-        <li><a href="${o.base}compositions/">Compositions</a></li>
-        <li><a href="${o.base}wanted/">Wanted</a></li>
-      </ul>
-    </div>
-    <div>
-      <h2>Contribute</h2>
-      <ul>
-        <li><a href="${o.base}contribute/">Make a prop</a></li>
-        <li><a href="${o.base}spec/0.1/">The asset spec</a></li>
-        <li><a href="${repoUrl}">GitHub</a></li>
-      </ul>
-    </div>
-    <div>
-      <h2>For tools and agents</h2>
-      <ul>
-        <li><a href="${o.base}index.json">index.json</a></li>
-        <li><a href="${o.base}llms.txt">llms.txt</a></li>
-        <li><a href="${o.base}about/">About the project</a></li>
-      </ul>
-    </div>
-  </div>
-  <p class="wrap fineprint muted">The spec text is CC BY 4.0 and the code is MIT.</p>
-</footer>`;
+  const footer = html`<div class="wrap"><footer class="foot">
+  <p>Prop Commons is an open library of game props that fit together. Every prop and scene is <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a>: free for anything, no credit needed. The spec text is CC BY 4.0 and the code is MIT.</p>
+  <nav aria-label="More">
+    <a href="${o.base}contribute/">Make a new prop</a>
+    <a href="${o.base}wanted/">Wanted</a>
+    <a href="${o.base}spec/0.1/">The spec</a>
+    <a href="${repoUrl}">GitHub</a>
+    <a href="${o.base}index.json">index.json</a>
+    <a href="${o.base}llms.txt">llms.txt</a>
+  </nav>
+</footer></div>`;
   return `<!doctype html>
 ${render(html`<html lang="en">
 <head>
@@ -153,26 +128,25 @@ ${render(html`<html lang="en">
 <title>${o.title}</title>
 ${o.description ? html`<meta name="description" content="${o.description}">` : ""}
 <link rel="icon" href="data:,">
+<link rel="preload" href="${o.base}vendor/fonts/archivo-latin-wdth-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="${versioned(`${o.base}static/style.css`)}">
 ${importMap ? raw(`<script type="importmap">${importMap}</script>`) : ""}
 ${o.modelViewer ? html`<script type="module" src="${o.base}vendor/model-viewer/model-viewer.min.js"></script>` : ""}
-${(o.scripts ?? []).map((s) => html`<script ${raw(s.module === false ? "defer" : 'type="module"')} src="${versioned(`${o.base}${s.src}`)}"></script>`)}
+${[{ src: "static/site.js" }, ...(o.scripts ?? [])].map((s: { src: string; module?: boolean }) => html`<script ${raw(s.module === false ? "defer" : 'type="module"')} src="${versioned(`${o.base}${s.src}`)}"></script>`)}
 </head>
 <body${raw(o.app ? ' class="app"' : "")}>
 <a class="skip" href="#main">Skip to content</a>
-<header class="site">
-  <div class="wrap header-inner">
-    <a class="brand" href="${o.base}">${raw(LOGO)}<span>Prop Commons</span></a>
+<header class="top">
+  <div class="wrap"><div class="top-in">
+    <a class="mark" href="${o.base}">Prop Commons</a>
     <nav aria-label="Site">
-      ${nav("gallery", "", "Library")}
+      ${nav("gallery", "", "Catalogue")}
+      ${nav("compositions", "compositions/", "Scenes")}
       ${nav("studio", "studio/", "Studio")}
-      ${nav("compositions", "compositions/", "Compositions")}
-      ${nav("wanted", "wanted/", "Wanted")}
       ${nav("about", "about/", "About")}
-      <a class="nav-github" href="${repoUrl}">GitHub</a>
-      <a class="button small${o.active === "contribute" ? " current" : ""}" href="${o.base}contribute/">Make a prop</a>
+      <a class="nav-connect" href="${o.base}#connect"><span data-when="off">Connect your AI</span><span data-when="on" hidden><span class="tick">✓</span><span data-tool-name>Your AI</span> connected</span></a>
     </nav>
-  </div>
+  </div></div>
 </header>
 <main id="main"${raw(o.app ? "" : ' class="wrap"')}>
 ${o.body}

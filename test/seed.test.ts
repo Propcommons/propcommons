@@ -102,7 +102,7 @@ describe("seed content in the browser", () => {
 
   it("the gallery shows all five seed assets", async () => {
     const { browser, page, errors } = await open("");
-    const names = await page.locator("#gallery .card .card-title").allTextContents();
+    const names = await page.locator("#gallery .cell a").allTextContents();
     expect(names).toEqual(
       expect.arrayContaining([
         "Apple, red",

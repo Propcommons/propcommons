@@ -16,7 +16,7 @@ function setup() {
     "Get the project, unless you're already in an up-to-date clone of it: check that Node.js 26.13 or later, git and the GitHub CLI are installed and that `gh auth status` shows me signed in (if not, walk me through `gh auth login`). Then run `gh repo fork Propcommons/propcommons --clone` and `cd propcommons`. If my fork already existed it may be old, so bring it up to date with `git pull --ff-only upstream main` before anything else. Then `npm ci` and `npx playwright install --only-shell chromium`.",
     "If `git config user.email` prints nothing, ask me for my name and my GitHub noreply email and set them, as AGENTS.md says.",
     "Read AGENTS.md in the clone and follow it: it's the rulebook and wins over anything in this message.",
-    `Use the project's MCP server if it's already connected (get_spec gives every rule and budget); otherwise use the \`npx propcommons\` commands, which do the same things (a server you add now usually only works after a restart, so don't stop for that).`,
+    `Use the Prop Commons MCP server if it's already connected (get_spec gives every rule and budget); otherwise use the \`npx propcommons\` commands in the clone, which do the same things (a server you add now usually only works after a restart, so don't stop for that).`,
   ];
 }
 
@@ -26,6 +26,15 @@ const finish = [
 ];
 
 const numbered = (steps) => steps.map((s, i) => `${i + 1}. ${s}`).join("\n");
+
+/** The line for an AI that is already connected: the connector hands it the brief and the steps. */
+function line(d, kind, wish) {
+  if (kind === "improve")
+    return `Use Prop Commons to improve ${d.ref.split("@")[0]}. ${wish ? `What I want better: ${wish}` : "Start with where it falls short."}`;
+  return wish
+    ? `Use Prop Commons to make a new prop: ${wish}`
+    : `Use Prop Commons to make a new prop. Ask me what to make; the Wanted list at ${d.site}wanted/ is a good place to start.`;
+}
 
 function improvePrompt(d, wish) {
   return `Help me make a better version of a prop for Prop Commons, an open library of free (CC0) 3D game props at real-world scale that all follow one spec, so they fit together in any scene.
@@ -96,23 +105,29 @@ npx propcommons preview assets/your-handle/...
 # Then open a pull request: CONTRIBUTING.md sections 6 and 7.`;
 }
 
+const LABELS = {
+  line: "Paste this into your AI:",
+  ai: "Paste this into your AI. It is long because it explains the whole project:",
+  self: "The commands, in a terminal:",
+};
+
 for (const maker of document.querySelectorAll(".maker")) {
   const d = maker.dataset;
   const text = maker.querySelector(".maker-text");
   const out = maker.querySelector(".maker-out");
   const label = maker.querySelector(".maker-out-label");
   const update = () => {
-    const how = maker.querySelector("input[type=radio]:checked")?.value ?? "ai";
+    const how = maker.querySelector("input[type=radio]:checked")?.value ?? "line";
     const wish = text.value.trim().replace(/\s+/g, " ");
     out.textContent =
       how === "self"
         ? byHand(d, d.kind)
-        : d.kind === "improve"
-          ? improvePrompt(d, wish)
-          : newPrompt(d, wish);
-    if (label)
-      label.textContent =
-        how === "self" ? "The commands, in a terminal:" : "Copy this and paste it into your AI:";
+        : how === "line"
+          ? line(d, d.kind, wish)
+          : d.kind === "improve"
+            ? improvePrompt(d, wish)
+            : newPrompt(d, wish);
+    if (label) label.textContent = LABELS[how] ?? LABELS.line;
     text.closest("label").hidden = how === "self";
   };
   maker.addEventListener("input", update);
@@ -122,10 +137,3 @@ for (const maker of document.querySelectorAll(".maker")) {
   if (asked && d.kind === "new") text.value = asked.slice(0, 600);
   update();
 }
-
-// The asset page's Improve button opens its builder in a dialog.
-const dialog = document.getElementById("improve-dialog");
-document.getElementById("improve-open")?.addEventListener("click", () => {
-  dialog?.showModal();
-  dialog?.querySelector(".maker-text")?.focus();
-});

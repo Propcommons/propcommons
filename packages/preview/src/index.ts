@@ -211,6 +211,7 @@ async function openScenePage(extra: [string, string][]) {
   const served = new Map<string, string>([
     ["/scene/render.html", path.join(SCENE_DIR, "render.html")],
     ["/scene/render.js", path.join(SCENE_DIR, "render.js")],
+    ["/scene/flat.js", path.join(SCENE_DIR, "flat.js")],
     ["/scene/stage.js", path.join(SCENE_DIR, "stage.js")],
     ["/scene/studio.hdr", path.join(SCENE_DIR, "studio.hdr")],
     ...extra,
@@ -334,6 +335,146 @@ export async function loadCompositionInThree(
       () => (window as unknown as { compositionBounds: PlacedBounds[] }).compositionBounds,
     )) as PlacedBounds[];
     return { file: outFile, items: bounds };
+  } finally {
+    await browser.close();
+  }
+}
+
+const WEBP = "data:image/webp;base64,";
+function saveWebp(file: string, data: unknown): void {
+  if (typeof data !== "string" || !data.startsWith(WEBP))
+    throw new Error(`No image was rendered for ${path.basename(file)}.`);
+  mkdirSync(path.dirname(file), { recursive: true });
+  writeFileSync(file, Buffer.from(data.slice(WEBP.length), "base64"));
+}
+
+export const FLAT_VIEWS = ["front", "side", "top"] as const;
+
+/** What flat.json says about an asset's flat views: their scale and each picture's size. */
+export interface FlatViews {
+  /** Width, height and depth in metres, measured as loaded. */
+  size: [number, number, number];
+  /** Pixels per metre in the pictures. */
+  pxPerMetre: number;
+  /** Empty pixels around the prop on every side. */
+  pad: number;
+  front: { width: number; height: number };
+  side: { width: number; height: number };
+  top: { width: number; height: number };
+}
+
+/**
+ * Renders the front, side and top of each model, straight on and all at one scale, on a
+ * transparent background: flat-front.webp, flat-side.webp, flat-top.webp and flat.json in each
+ * job's outDir. The site draws dimension lines over them. One browser serves every job.
+ */
+export async function renderFlatViews(
+  jobs: { model: string; outDir: string }[],
+  opts: { longest?: number; pad?: number } = {},
+): Promise<FlatViews[]> {
+  if (!jobs.length) return [];
+  const { browser, page, errors } = await openScenePage(
+    jobs.map((j, i): [string, string] => [`/files/f${i}.glb`, path.resolve(j.model)]),
+  );
+  const out: FlatViews[] = [];
+  try {
+    for (const [i, job] of jobs.entries()) {
+      const r = (await page.evaluate(
+        (j) =>
+          (
+            window as unknown as { renderFlat(j: unknown): Promise<Record<string, unknown>> }
+          ).renderFlat(j),
+        { url: `/files/f${i}.glb`, longest: opts.longest ?? 640, pad: opts.pad ?? 8 },
+      )) as Record<string, { image?: string; width: number; height: number }> & {
+        size: [number, number, number];
+        pxPerMetre: number;
+        pad: number;
+      };
+      if (errors.length) throw new Error(`The preview page failed: ${errors.join("; ")}`);
+      const data = { size: r.size, pxPerMetre: r.pxPerMetre, pad: r.pad } as FlatViews;
+      for (const v of FLAT_VIEWS) {
+        const shot = r[v] as { image?: string; width: number; height: number };
+        saveWebp(path.join(job.outDir, `flat-${v}.webp`), shot.image);
+        data[v] = { width: shot.width, height: shot.height };
+      }
+      writeFileSync(path.join(job.outDir, "flat.json"), `${JSON.stringify(data)}\n`);
+      out.push(data);
+    }
+    return out;
+  } finally {
+    await browser.close();
+  }
+}
+
+export interface RowItem {
+  /** What the item is called in the result, e.g. an asset ID. */
+  id: string;
+  model: string;
+  /** Smaller props standing on top of this one: dx and dz in metres from its centre. */
+  on?: { id: string; model: string; dx: number; dz?: number }[];
+}
+
+/** Where everything is in a row picture, in pixels, so labels and a ruler can be drawn on it. */
+export interface RowLayout {
+  width: number;
+  height: number;
+  pxPerMetre: number;
+  /** x of the first prop's left edge, and y of the ground under the props' centres. */
+  originX: number;
+  baseY: number;
+  /** A height of h metres is h * pxPerMetre * rise pixels above baseY. */
+  rise: number;
+  /** The gap between neighbours, in pixels. */
+  gapPx: number;
+  items: {
+    id: string;
+    on: string | null;
+    x0: number;
+    x1: number;
+    top: number;
+    size: [number, number, number];
+  }[];
+}
+
+/**
+ * Renders props standing side by side at one scale, seen from the front and slightly above, on a
+ * transparent background with soft shadows, as a WebP `width` pixels wide.
+ */
+export async function renderRow(
+  items: RowItem[],
+  outFile: string,
+  opts: { width?: number; gap?: number; elevation?: number } = {},
+): Promise<RowLayout> {
+  const files: [string, string][] = [];
+  const url = (model: string) => {
+    const name = `/files/r${files.length}.glb`;
+    files.push([name, path.resolve(model)]);
+    return name;
+  };
+  const job = {
+    items: items.map((i) => ({
+      id: i.id,
+      url: url(i.model),
+      on: (i.on ?? []).map((c) => ({ id: c.id, url: url(c.model), dx: c.dx, dz: c.dz ?? 0 })),
+    })),
+    gap: opts.gap ?? 0.2,
+    width: opts.width ?? 2400,
+    elevation: opts.elevation ?? 7,
+    pad: { l: 20, r: 150, t: 30, b: 16 },
+  };
+  const { browser, page, errors } = await openScenePage(files);
+  try {
+    const r = (await page.evaluate(
+      (j) =>
+        (
+          window as unknown as { renderRow(j: unknown): Promise<Record<string, unknown>> }
+        ).renderRow(j),
+      job,
+    )) as unknown as RowLayout & { image?: string };
+    if (errors.length) throw new Error(`The preview page failed: ${errors.join("; ")}`);
+    saveWebp(outFile, r.image);
+    const { image: _image, ...layout } = r;
+    return layout;
   } finally {
     await browser.close();
   }
