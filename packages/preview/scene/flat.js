@@ -4,7 +4,17 @@
 // previews. Kept apart from render.js so that changing one does not re-render the other.
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { boundsOf, createStage, enableShadows, fitStage } from "./stage.js";
+import {
+  BACKGROUND,
+  boundsOf,
+  createStage,
+  enableShadows,
+  fitCameraToBox,
+  fitStage,
+  frameCamera,
+  GROUND,
+  viewDirection,
+} from "./stage.js";
 
 /**
  * Clear glass shows what is behind it, and here nothing is: on a transparent background it would
@@ -206,4 +216,34 @@ window.renderFlat = async (job) => {
     out[name] = { image: r.image, width: r.width, height: r.height };
   }
   return out;
+};
+
+/**
+ * A close-up of one prop alone on the plain stage, three-quarter front, like the gallery
+ * thumbnail but with nothing behind it. For glass props, whose thumbnail has a striped card.
+ * job = { url, size, small }: returns WebP data URLs at `size` and `small` pixels square.
+ */
+window.renderPlain = async (job) => {
+  if (!cache.has(job.url)) cache.set(job.url, (await new GLTFLoader().loadAsync(job.url)).scene);
+  const obj = enableShadows(cache.get(job.url).clone(true));
+  const { renderer, stage } = await setUp();
+  const shadowGround = stage.ground.material;
+  stage.scene.background = new THREE.Color(BACKGROUND);
+  stage.ground.material = new THREE.MeshStandardMaterial({ color: GROUND, roughness: 1 });
+  stage.ground.visible = true;
+  renderer.setSize(job.size, job.size, false);
+  stage.scene.add(obj);
+  const box = boundsOf(obj);
+  fitStage(stage, box);
+  const camera = fitCameraToBox(frameCamera(box, viewDirection("front")), box, 0.9);
+  renderer.render(stage.scene, camera);
+  const image = renderer.domElement.toDataURL("image/webp", 0.9);
+  const c = document.createElement("canvas");
+  c.width = job.small;
+  c.height = job.small;
+  c.getContext("2d").drawImage(renderer.domElement, 0, 0, job.small, job.small);
+  stage.scene.remove(obj);
+  stage.scene.background = null;
+  stage.ground.material = shadowGround;
+  return { image, small: c.toDataURL("image/webp", 0.85) };
 };

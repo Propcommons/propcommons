@@ -3,7 +3,13 @@ import { existsSync, mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { FLAT_VIEWS, type FlatViews, renderFlatViews, renderRow } from "../src/index.ts";
+import {
+  FLAT_VIEWS,
+  type FlatViews,
+  renderFlatViews,
+  renderPlainViews,
+  renderRow,
+} from "../src/index.ts";
 
 const REPO = path.resolve(import.meta.dirname, "../../..");
 const model = (slug: string) => path.join(REPO, "assets/mattashes", slug, "v1/model.glb");
@@ -24,6 +30,15 @@ describe("flat views", () => {
     expect([flat.front.width, flat.front.height]).toEqual([px(w), px(h)]);
     expect([flat.side.width, flat.side.height]).toEqual([px(d), px(h)]);
     expect([flat.top.width, flat.top.height]).toEqual([px(w), px(d)]);
+  }, 120_000);
+
+  it("renders a plain close-up of a glass prop, large and card-sized", async () => {
+    const out = mkdtempSync(path.join(tmpdir(), "propcommons-plain-"));
+    await renderPlainViews([{ model: model("drinking-glass"), outDir: out }]);
+    const size = (f: string) => readFileSync(path.join(out, f)).length;
+    // Both are real pictures, and the card is the smaller file.
+    expect(size("plain-card.webp")).toBeGreaterThan(1000);
+    expect(size("plain.webp")).toBeGreaterThan(size("plain-card.webp"));
   }, 120_000);
 
   it("lays a row out left to right at one scale, with smaller props on top", async () => {

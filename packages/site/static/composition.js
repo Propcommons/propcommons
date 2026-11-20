@@ -74,6 +74,14 @@ async function main() {
     controls.target.copy(box.getCenter(new THREE.Vector3()));
     controls.maxPolarAngle = Math.PI / 2 - 0.02; // stay above the ground
     controls.update();
+    // Zoom on scroll only after a click, so scrolling down the page never gets stuck here.
+    controls.enableZoom = false;
+    canvas.addEventListener("pointerdown", () => {
+      controls.enableZoom = true;
+    });
+    canvas.addEventListener("pointerleave", () => {
+      controls.enableZoom = false;
+    });
     controls.addEventListener("change", draw);
     draw();
   };
@@ -124,7 +132,7 @@ async function main() {
 
   const size = box.getSize(new THREE.Vector3());
   const left = composition.items.length - items.length;
-  status.textContent = `${left ? `${left} item(s) left out because their asset was taken down · ` : ""}${items.length} items from ${refs.length} assets · ${(size.x * 100).toFixed(0)} × ${(size.y * 100).toFixed(0)} × ${(size.z * 100).toFixed(0)} cm · drag to orbit, scroll to zoom`;
+  status.textContent = `${left ? `${left} item(s) left out because their asset was taken down · ` : ""}${items.length} items from ${refs.length} assets · ${(size.x * 100).toFixed(0)} × ${(size.y * 100).toFixed(0)} × ${(size.z * 100).toFixed(0)} cm · drag to look around; click it, then scroll to zoom`;
   // For automated checks: each placed item's world-space bounds.
   window.compositionBounds = placed.map((o) => {
     const b = boundsOf(o);

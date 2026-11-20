@@ -570,10 +570,6 @@ model-viewer {
   border-bottom: 1px solid var(--line);
 }
 
-model-viewer::part(default-progress-bar) {
-  display: none;
-}
-
 .hint {
   margin: 8px 0 0;
   font-size: 0.85rem;
@@ -2057,4 +2053,114 @@ body.app > main {
   background: var(--accent);
   color: var(--accent-text);
   cursor: pointer;
+}
+
+/* Studio toolbar: buttons in joined groups, and a menu for the ways to share a scene. */
+
+.tool-group {
+  display: inline-flex;
+  align-items: stretch;
+}
+
+.tool-group > * + * {
+  margin-left: -1px;
+}
+
+.toolbar .tool-group,
+.toolbar > button,
+.toolbar > select {
+  margin-right: 6px;
+}
+
+.toolbar {
+  gap: 6px 0;
+}
+
+.inspector button {
+  font: inherit;
+  font-size: 0.88rem;
+  padding: 5px 11px;
+  border-radius: 2px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: #15171a;
+  cursor: pointer;
+}
+
+.inspector .tool-group {
+  margin-top: 6px;
+}
+
+.toolbar button,
+.toolbar select,
+.toolbar .button-like,
+.inspector button {
+  border-color: rgb(21 23 26 / 45%);
+}
+
+.toolbar button[aria-pressed="true"] {
+  background: var(--tape);
+  border-color: var(--ink);
+  color: var(--ink);
+  position: relative;
+}
+
+.toolbar button.primary {
+  border-color: var(--ink);
+  font-weight: 650;
+}
+
+#share-open {
+  anchor-name: --share-open;
+}
+
+#share-open::after {
+  content: "";
+  display: inline-block;
+  margin-left: 7px;
+  border: 4px solid transparent;
+  border-top-color: currentcolor;
+  transform: translateY(2px);
+}
+
+.toolbar .scene-name {
+  width: 10em;
+}
+
+.toolbar select {
+  max-width: 10.5em;
+}
+
+.toolbar button,
+.toolbar .button-like {
+  padding-left: 9px;
+  padding-right: 9px;
+}
+
+.menu-list {
+  position-anchor: --share-open;
+  inset: auto;
+  top: anchor(bottom);
+  right: anchor(right);
+  margin: 4px 0 0;
+  padding: 4px;
+  border: 1.5px solid var(--ink);
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+
+.menu-list:popover-open {
+  display: grid;
+}
+
+.toolbar .menu-list button {
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 8px 12px;
+  margin: 0;
+}
+
+.toolbar .menu-list button:hover {
+  background: var(--tape);
 }
