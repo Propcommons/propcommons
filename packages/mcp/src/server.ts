@@ -255,7 +255,7 @@ export function createServer(o: ServerOptions): McpServer {
         if (same)
           out.content.push({
             type: "text",
-            text: `Note: model.glb is still the same file as ${same}. Replace it with the better model.`,
+            text: `Note: model.glb is still the same file as ${same}. Replace it with the better model; a pull request with an unchanged model is refused.`,
           });
         return out;
       } catch (e) {

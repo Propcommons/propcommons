@@ -224,6 +224,9 @@ describe("command line", () => {
     const v = cli(["validate", "assets/dana/lemon/v1"], work);
     expect(v.code).toBe(0);
     expect(v.stdout).toContain("same file as mattashes/lemon@1");
+    const vj = cli(["validate", "assets/dana/lemon/v1", "--json"], work);
+    expect(JSON.parse(vj.stdout)).toMatchObject({ pass: true });
+    expect(vj.stderr).toContain("same file as mattashes/lemon@1");
     g("add", "assets");
     g("commit", "-q", "-m", "Add dana/lemon@1");
     const copy = cli(["check-pr", "--against", "main"], work);

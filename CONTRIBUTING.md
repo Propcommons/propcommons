@@ -60,7 +60,12 @@ with Blender 5.3; older versions may work.
    cd propcommons
    ```
 
-   Your fork is where you push your work. The original project is set up as `upstream`.
+   Your fork is where you push your work. The original project is set up as `upstream`. If you
+   made your fork a while ago, bring it up to date first:
+
+   ```bash
+   git pull --ff-only upstream main
+   ```
 
 2. Install the project's tools (about a minute):
 

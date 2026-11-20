@@ -41,7 +41,7 @@ Commands:
                             next version if it is yours, otherwise a new asset under your handle
                             that names the original as its parent.
                             Options: --as <your handle>, --slug, --ai-assisted, --tools a,b
-  preview <folder>          Render the four preview images (see packages/preview).
+  preview <folder>          Render the preview images (see packages/preview).
   check-pr --against [branch]
                             Check your committed work the way GitHub will, before you push.
                             The branch defaults to upstream/main (or origin/main).
@@ -85,21 +85,22 @@ async function cmdValidate(args: string[]): Promise<number> {
   const results: ValidationResult[] = [];
   for (const folder of positionals)
     results.push(await validateFolder(folder, { root: findRepoRoot(folder) }));
+  // Notes go to stderr with --json, so the JSON on stdout stays exactly the result object.
+  const note = (line: string) => (values.json ? console.error : console.log)(`  note    ${line}`);
   if (values.json)
     console.log(JSON.stringify(results.length === 1 ? results[0] : results, null, 2));
-  else
-    positionals.forEach((folder, i) => {
-      printResult(results[i] as ValidationResult);
-      if (isPlaceholderModel(findRepoRoot(folder), folder))
-        console.log(
-          "  note    model.glb is still the placeholder box from `propcommons init`. Replace it with your own model; a pull request with the placeholder is refused.",
-        );
-      const same = unchangedFrom(folder);
-      if (same)
-        console.log(
-          `  note    model.glb is still the same file as ${same}. Replace it with the better model.`,
-        );
-    });
+  positionals.forEach((folder, i) => {
+    if (!values.json) printResult(results[i] as ValidationResult);
+    if (isPlaceholderModel(findRepoRoot(folder), folder))
+      note(
+        "model.glb is still the placeholder box from `propcommons init`. Replace it with your own model; a pull request with the placeholder is refused.",
+      );
+    const same = unchangedFrom(folder);
+    if (same)
+      note(
+        `model.glb is still the same file as ${same}. Replace it with the better model; a pull request with an unchanged model is refused.`,
+      );
+  });
   return results.every((r) => r.pass) ? 0 : 1;
 }
 
