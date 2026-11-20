@@ -7,9 +7,10 @@ const QUALITY =
 
 function setup() {
   return [
-    "Get the project, unless you're already in a clone of it: check that Node.js 26.13 or later, git and the GitHub CLI are installed and that `gh auth status` shows me signed in (if not, walk me through `gh auth login`). Then run `gh repo fork Propcommons/propcommons --clone`, `cd propcommons`, `npm ci` and `npx playwright install --only-shell chromium`.",
+    "Get the project, unless you're already in an up-to-date clone of it: check that Node.js 26.13 or later, git and the GitHub CLI are installed and that `gh auth status` shows me signed in (if not, walk me through `gh auth login`). Then run `gh repo fork Propcommons/propcommons --clone` and `cd propcommons`. If my fork already existed it may be old, so bring it up to date with `git pull --ff-only upstream main` before anything else. Then `npm ci` and `npx playwright install --only-shell chromium`.",
+    "If `git config user.email` prints nothing, ask me for my name and my GitHub noreply email and set them, as AGENTS.md says.",
     "Read AGENTS.md in the clone and follow it: it's the rulebook and wins over anything in this message.",
-    `Use the project's MCP server if you can (AGENTS.md says how to connect it); otherwise the \`npx propcommons\` commands do the same things.`,
+    `Use the project's MCP server if it's already connected; otherwise use the \`npx propcommons\` commands, which do the same things (a server you add now usually only works after a restart, so don't stop for that).`,
   ];
 }
 
@@ -32,7 +33,7 @@ ${QUALITY}
 Please do it end to end on this computer:
 ${numbered([
   ...setup(),
-  `Start from the current model with improve_asset, from "${d.ref}" (command line: \`npx propcommons improve ${d.ref} --ai-assisted --tools "<your model's name>"\`). That makes a folder under my GitHub handle that links back to the original.`,
+  `Start from the current model with improve_asset, from "${d.ref}" (command line: \`npx propcommons improve ${d.ref} --ai-assisted --tools "<your model's name>"\`). If the prop is mine, that makes its next version; otherwise it makes a copy under my GitHub handle that links back to the original. \`--tools\` is the full list of tools used for the new model.`,
   "Look at the original's preview images first and tell me in a sentence or two what you'll change. Then build the better model (in Blender if I have it, otherwise with a generator script in work/, as AGENTS.md describes) and replace model.glb in the new folder.",
   ...finish,
 ])}`;
@@ -61,7 +62,9 @@ function byHand(d, kind) {
       : 'npx propcommons init your-handle/your-prop --name "Your prop" --size-class small --tools "Blender"';
   return `# Once: get the project (needs Node.js 26.13+, git, and the GitHub CLI signed in)
 gh repo fork Propcommons/propcommons --clone
-cd propcommons && npm ci
+cd propcommons
+git pull --ff-only upstream main   # brings an older fork up to date
+npm ci
 npx playwright install --only-shell chromium
 
 # ${kind === "improve" ? `Start from ${d.name}: a copy of it under your own handle` : "Start the folder"}

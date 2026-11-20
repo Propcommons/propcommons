@@ -28,8 +28,11 @@ gh repo fork Propcommons/propcommons --clone
 ```
 
 ```bash
-cd propcommons && npm ci
+cd propcommons && git pull --ff-only upstream main && npm ci
 ```
+
+The `git pull` matters when the fork already existed: `gh repo fork` then clones it as it was, which
+may be weeks old (no `improve` command, missing assets). It's harmless on a fresh fork.
 
 ```bash
 npx playwright install --only-shell chromium
@@ -54,7 +57,7 @@ The server runs locally from your clone, over stdio. It has eight tools:
 | `init_asset`     | Creates `assets/<author>/<slug>/v1` from the template.                                              |
 | `improve_asset`  | Starts a better version of an existing asset from a copy of it, linked back to the original.        |
 | `validate`       | Returns the validator's result object: every failed rule, what was measured, the limit and a fix.   |
-| `render_preview` | The four preview images a reviewer will see.                                                        |
+| `render_preview` | The preview images a reviewer will see.                                                             |
 | `search_assets`  | Merged assets and open `wanted.json` entries.                                                       |
 | `compose_scene`  | Builds a composition from placements, settles it onto surfaces, validates it and renders a picture. |
 | `submit`         | Opens the pull request with the contributor's own `gh` login, after their sign-off.                 |
@@ -64,6 +67,9 @@ The server runs locally from your clone, over stdio. It has eight tools:
 ```bash
 claude mcp add propcommons -- node packages/mcp/src/main.ts
 ```
+
+A server added mid-task usually only appears in the agent's next session. Don't stop for it: the
+command line below does the same things.
 
 **Any MCP client** (JSON configuration). Replace both paths with your clone's absolute path. If
 your client can't find `node`, give the full path that `which node` prints as `command`:
@@ -103,11 +109,15 @@ right: the previews are the real check.
 
 **Where the model comes from:** with Blender, build the object there and export it with
 `tools/blender/export_asset.py` (see CONTRIBUTING.md). Without Blender, write a script that builds
-the mesh with `@gltf-transform/core` (installed by `npm ci`). Put it in the `work/` folder of the
-clone, which git ignores, so it can import the project's packages but never ends up in the pull
+the mesh with `@gltf-transform/core` (installed by `npm ci`). Put it in a `work/` folder in the
+clone (create it; git ignores it), so it can import the project's packages but never ends up in the pull
 request. `tools/lib/mesh.ts` has shape helpers (`box`, `lathe` for round objects, `extrude`,
 `ground` to put a model on the ground and centre it, `fixWinding`), and `tools/seed/build.ts` shows
-them in use. If the person wants to share the script, they publish it elsewhere and link it in
+them in use. `tools/lib/png.ts` writes PNG textures and has a seeded random generator for noise
+(brushed metal, grain, speckle). JPEG keeps noisy textures far smaller than PNG; use a library the
+project already declares in a `package.json` rather than one that only happens to be installed.
+Material budgets are small (two for a `small` asset): put several surfaces in one material with a
+texture atlas instead of adding materials. If the person wants to share the script, they publish it elsewhere and link it in
 `source_url`.
 
 ### With the command line only
