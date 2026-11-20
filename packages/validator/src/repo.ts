@@ -183,10 +183,12 @@ export function improveAsset(o: ImproveOptions): ImproveResult {
     credits,
     ai_assisted: o.aiAssisted || manifest.ai_assisted === true,
     tools: [...new Set(o.tools)],
-    parent: sameAsset ? (manifest.parent ?? null) : source,
-    source_url: null,
-    notes_url: null,
   });
+  // The original's links describe the original, not this version; empty fields are left out.
+  delete manifest.source_url;
+  delete manifest.notes_url;
+  if (!sameAsset) manifest.parent = source;
+  else if (manifest.parent == null) delete manifest.parent;
   writeFileSync(path.join(dir, "asset.json"), `${JSON.stringify(manifest, null, 2)}\n`);
   return { dir, source, sourceDir, sameAsset };
 }
