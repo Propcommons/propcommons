@@ -500,3 +500,42 @@ other MCP client).
   sign-off rule.
 - **Node.js 26.13 is still required** by the tools. The launcher itself starts on Node.js 20 and
   says which version is needed.
+
+### The site as a measured catalogue (20 November 2026)
+
+The first site used the stock landing-page layout (small capitals, big headline, three feature
+cards, rounded white cards on cream, a sage accent) and read as generated. It also buried the
+point of the project, which is that anyone can point their own AI at a rough prop and make a
+better one. The redesign changes both.
+
+- **Improve is the main action.** The homepage's headline and first button are about it, the three
+  steps (connect once, pick a prop, sign it off) sit under the line-up with the connect command in
+  step 1, and every asset page has an Improve it section in the page (no dialog) that says where
+  the prop falls short, shows its numbers against its budget as bars, and gives the line to paste.
+- **Connected or not is the visitor's word.** A static site can't see a local MCP server. The
+  visitor ticks "I've done this"; `static/site.js` remembers it and which AI they use in that
+  browser, hides the connect step and shows it in the header. The prompt builder offers one line
+  for a connected AI (the default), the full prompt as before, and the commands by hand.
+- **Measurement is the look.** The homepage opens on a row of props at one scale standing on a
+  tape measure, rendered straight on by `packages/preview` (`renderRow`, `scene/flat.js`). Asset
+  pages have a measured drawing: top, front and side at one scale (`renderFlatViews`), laid out as
+  on a drawing sheet with the width, height and depth as dimension lines drawn by the site from
+  the known scale. The flat pictures are transparent WebP, cached under `previews/` beside the
+  review images with their own key, so changing `flat.js` re-renders them and nothing else. Clear
+  glass is drawn tinted and part-transparent there, because on a transparent background it would
+  vanish.
+- **The line-up's props are named by slug in the site build** (`LINEUP`). Missing ones are left
+  out, and with fewer than four the homepage has no line-up, so a new or renamed library still
+  builds.
+- **The catalogue is grouped by kit**, each prop in the first section whose tag it has (food
+  before kitchen, so fruit isn't lost among the pans). A prop with no textures or under a tenth of
+  its triangle budget is marked, and "Needs work" filters to those. The AI-assisted badge left the
+  cards, where it was on every one; it stays on each asset page and as a filter.
+- **Light only.** Every prop picture is rendered on light grey, so the page is that grey
+  (`#f0f0ee`) and pictures sit on it with no card. A dark page would be a wall of light tiles.
+- **One self-hosted typeface.** Archivo (OFL), from the `@fontsource-variable/archivo` package,
+  copied into `vendor/fonts` with its licence. The site still loads nothing from another origin.
+- **Words.** "Library" became "Catalogue" and "Compositions" became "Scenes" in the site's
+  navigation and prose. The spec, file names and URLs still say composition.
+- **Not done:** the Studio only took the new colours and shapes (its toolbar is unchanged), and
+  the glass props' gallery pictures still have the striped card behind them.

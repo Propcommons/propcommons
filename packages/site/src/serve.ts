@@ -13,6 +13,7 @@ const TYPES: Record<string, string> = {
   ".glb": "model/gltf-binary",
   ".png": "image/png",
   ".webp": "image/webp",
+  ".woff2": "font/woff2",
   ".hdr": "application/octet-stream",
   ".txt": "text/plain; charset=utf-8",
   ".md": "text/markdown; charset=utf-8",

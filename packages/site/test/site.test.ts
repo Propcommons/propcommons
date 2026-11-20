@@ -124,7 +124,8 @@ describe("site", () => {
   it("asset pages offer Improve, starting from the newest version, and link better versions", () => {
     for (const v of ["v1", "v2"]) {
       const p = read(`assets/alice/mug/${v}/index.html`);
-      expect(p).toContain('id="improve-open"');
+      expect(p).toContain('<section class="block improve" id="improve"');
+      expect(p).toContain('href="#improve">Improve it</a>');
       expect(p).toContain('data-ref="alice/mug@2"');
       expect(p).toContain("static/make.js");
     }
@@ -139,9 +140,43 @@ describe("site", () => {
     expect(brief).toMatch(/no textures|\d+ textures? \(\d+×\d+/);
     expect(v2).toContain('data-path="assets/alice/mug/v2"');
     const make = read("contribute/index.html");
-    expect(make).toContain('class="maker" data-kind="new"');
+    expect(make).toContain('class="maker todo" data-kind="new"');
     expect(make).toMatch(/data-brief="The library has \d+ props/);
     expect(existsSync(path.join(out, "static/make.js"))).toBe(true);
+  });
+
+  it("offers the one command that connects an AI, on the homepage and beside every Improve", () => {
+    const command = "claude mcp add propcommons -- npx -y propcommons mcp";
+    const home = read("index.html");
+    expect(home).toContain('id="connect"');
+    expect(home).toContain(command);
+    expect(home).toContain("codex mcp add propcommons -- npx -y propcommons mcp");
+    // The header's link to it, which static/site.js swaps for "connected" once ticked.
+    expect(home).toContain('class="nav-connect" href="/propcommons/#connect"');
+    expect(read("assets/alice/mug/v2/index.html")).toContain(command);
+    expect(read("contribute/index.html")).toContain(command);
+    const site = read("static/site.js");
+    expect(site).toContain("pc-connected");
+    expect(home).toMatch(/src="\/propcommons\/static\/site.js\?v=[0-9a-f]{10}"/);
+  });
+
+  it("groups the catalogue by kit and marks props with an obvious weak spot", () => {
+    const home = read("index.html");
+    expect(home).toContain('<h3 id="kit-kitchen">Kitchen</h3>');
+    // The fixture boxes are 12 triangles each, of the 5,000 a small prop may have.
+    expect(home).toContain('<span class="need">Very little detail</span>');
+    expect(home).toContain('data-need="1"');
+    const mug = read("assets/alice/mug/v2/index.html");
+    expect(mug).toContain("<strong>Very little detail.</strong>");
+    expect(mug).toContain("of 5,000");
+  });
+
+  it("serves its own typeface and nothing from another site", () => {
+    expect(existsSync(path.join(out, "vendor/fonts/archivo-latin-wdth-normal.woff2"))).toBe(true);
+    expect(existsSync(path.join(out, "vendor/fonts/LICENSE"))).toBe(true);
+    const css = read("static/style.css");
+    expect(css).toContain('url("../vendor/fonts/archivo-latin-wdth-normal.woff2")');
+    expect(css).not.toMatch(/url\(["']?https?:/);
   });
 
   it("the compositions page lists the composition", () => {
