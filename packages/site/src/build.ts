@@ -621,7 +621,7 @@ function compositionPage(o: SiteOptions, index: Index, c: IndexComposition): str
 </div>
 <div class="composition-layout">
   <div>
-    <canvas id="composition" width="960" height="640" data-composition="composition.json" data-index="${o.base}index.json" data-base="${o.base}" aria-label="3D view of ${m.name}"></canvas>
+    <div class="stage-wrap"><canvas id="composition" width="960" height="640" data-composition="composition.json" data-index="${o.base}index.json" data-base="${o.base}" aria-label="3D view of ${m.name}"></canvas><p class="stage-loading" id="loading" aria-hidden="true">Loading…</p></div>
     <p class="viewer-hint" id="status">Loading…</p>
     <h2>Items</h2>
     <div class="table-scroll"><table class="items"><thead><tr><th>#</th><th><span class="muted">Preview</span></th><th>Asset</th><th>Position (cm)</th><th>Scale</th></tr></thead><tbody>${rows}</tbody></table></div>

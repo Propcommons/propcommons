@@ -592,6 +592,32 @@ canvas#composition {
   touch-action: none;
 }
 
+.stage-wrap {
+  position: relative;
+}
+
+.stage-loading {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.6);
+  color: #fff;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  max-width: calc(100% - 24px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+.stage-loading[hidden] {
+  display: none;
+}
+
 .viewer-hint {
   font-size: 0.88rem;
   color: var(--muted);
