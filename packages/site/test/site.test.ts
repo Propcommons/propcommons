@@ -136,7 +136,7 @@ describe("site", () => {
     const brief = /data-brief="([^"]*)"/.exec(v2)?.[1] ?? "";
     expect(brief).toContain("Size class small: longest side 1 cm–30 cm; up to 5,000 triangles");
     expect(brief).toContain("of its budget");
-    expect(brief).toMatch(/no textures|textures \d/);
+    expect(brief).toMatch(/no textures|\d+ textures? \(\d+×\d+/);
     expect(v2).toContain('data-path="assets/alice/mug/v2"');
     const make = read("contribute/index.html");
     expect(make).toContain('class="maker" data-kind="new"');
