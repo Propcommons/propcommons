@@ -1,0 +1,28 @@
+{
+  "spec": "0.1",
+  "id": "mattashes/wheelbarrow",
+  "version": 2,
+  "name": "Wheelbarrow",
+  "license": "CC0-1.0",
+  "size_class": "large",
+  "tags": [
+    "garden",
+    "tool"
+  ],
+  "credits": [
+    {
+      "github": "mattashes",
+      "roles": [
+        "directed"
+      ]
+    }
+  ],
+  "ai_assisted": true,
+  "tools": [
+    "Claude Opus 5.5",
+    "Blender"
+  ],
+  "parent": null,
+  "source_url": null,
+  "notes_url": null
+}
