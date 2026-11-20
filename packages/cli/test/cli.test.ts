@@ -221,6 +221,8 @@ describe("command line", () => {
       readFileSync(path.join(work, "assets/dana/lemon/v1/asset.json"), "utf8"),
     );
     expect(manifest).toMatchObject({ id: "dana/lemon", version: 1, parent: "mattashes/lemon@1" });
+    expect(manifest).not.toHaveProperty("source_url");
+    expect(manifest).not.toHaveProperty("notes_url");
     const v = cli(["validate", "assets/dana/lemon/v1"], work);
     expect(v.code).toBe(0);
     expect(v.stdout).toContain("same file as mattashes/lemon@1");

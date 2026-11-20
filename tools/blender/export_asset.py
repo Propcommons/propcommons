@@ -100,6 +100,12 @@ def check_materials(objects):
             if mat is None or mat.name in seen or not getattr(mat, "node_tree", None):
                 continue
             seen.add(mat.name)
+            if not getattr(mat, "use_backface_culling", True):
+                print(
+                    f'Note: material "{mat.name}" will export double-sided (Backface Culling is off). '
+                    "That suits thin surfaces such as leaves or paper; for a closed object, turn on "
+                    "Backface Culling in the material's settings so engines draw only the outside."
+                )
             for node in mat.node_tree.nodes:
                 if node.type != "BSDF_PRINCIPLED":
                     continue

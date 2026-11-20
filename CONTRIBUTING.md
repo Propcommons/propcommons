@@ -232,8 +232,33 @@ The script works on copies and never changes or saves your .blend. It applies mo
 transforms, joins and triangulates the parts, puts the lowest point on the ground and centres the
 footprint, removes vertex colours, and writes `model.glb` (and `collision.glb` if you made one). It
 warns, and lists again at the end, any material setting that won't export as it looks
-(node-based colours, Coat, Sheen and the like). Fix those in Blender and export again. Lines like "Draco is available"
+(node-based colours, Coat, Sheen and the like). Fix those in Blender and export again. It also
+says when a material will export **double-sided** (Backface Culling off in Blender's material
+settings): right for thin surfaces such as leaves or paper, but a closed object should have
+Backface Culling on, so engines draw only its outside. Lines like "Draco is available"
 are Blender saying what it could do; the script doesn't use compression.
+
+#### Baking procedural materials into textures
+
+If you built a material from nodes (noise, wood, wear masks), bake it to images before exporting.
+Give the parts UVs first (one UV map; long, thin parts such as handles pack better cut into two or
+three pieces), then, with Cycles as the render engine:
+
+1. **Colour, roughness and metallic:** for each one, temporarily plug that value into an Emission
+   shader connected to the Material Output, and bake with Bake Type **Emit** into a new image. An
+   Emission bake records the value itself, with no light or shadow in it.
+2. **Normal map:** bake Type **Normal** in **Tangent** space from the full material.
+3. **Wire up the result:** a Principled BSDF with the colour image in Base Color, a Normal Map node
+   (Tangent space) feeding Normal, and one image holding roughness in G and metallic in B, through
+   a Separate Color node into Roughness and Metallic. Set the non-colour images' Color Space to
+   Non-Color. Saved as JPEG, they export as they are, without re-encoding.
+
+Don't bake Ambient Occlusion or Combined into the colour: engines add their own shadows, and baked
+ones show up as dark smudges. The glTF exporter may print `More than one shader node tex image
+used for a texture` when one image feeds both roughness and metallic; that is expected and the
+file is correct. **The first bake can be very slow** (on Apple Silicon, 20 minutes or more with no
+output) while Blender compiles its GPU code; later bakes are quick. Bake small (512 px) once
+first, or set Device to CPU, to get past it.
 
 **Other tools:** export a binary glTF (`.glb`) to `assets/yourname/wooden-spoon/v1/model.glb`
 with compression off, textures embedded, and no cameras, lights or animation.

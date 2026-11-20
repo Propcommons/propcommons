@@ -108,7 +108,7 @@ statement and get their yes → `submit`. A `PASS` means the file is well-formed
 right: the previews are the real check.
 
 **Where the model comes from:** with Blender, build the object there and export it with
-`tools/blender/export_asset.py` (see CONTRIBUTING.md). Without Blender, write a script that builds
+`tools/blender/export_asset.py` (see CONTRIBUTING.md, which also has a recipe for baking node-built materials into textures). Without Blender, write a script that builds
 the mesh with `@gltf-transform/core` (installed by `npm ci`). Put it in a `work/` folder in the
 clone (create it; git ignores it), so it can import the project's packages but never ends up in the pull
 request. `tools/lib/mesh.ts` has shape helpers (`box`, `lathe` for round objects, `extrude`,
@@ -148,14 +148,15 @@ height so it rests on the ground or on what's under it (lowered straight down fr
 give, bottom of the pile first) and centres the scene; choose x, z, rotation and a rough height a
 little above the resting place yourself.
 
-Before pushing, check the commits exactly as GitHub will (the sign-off is assumed ticked):
+Commit the folder on a branch first (CONTRIBUTING.md section 6), then, before pushing, check the
+commits exactly as GitHub will (the sign-off is assumed ticked; it reads commits, not unsaved
+files):
 
 ```bash
 npx propcommons check-pr --against upstream/main
 ```
 
-Then follow CONTRIBUTING.md sections 6 and 7: commit only that folder on a branch, push it to the
-fork, and open the pull request with `gh pr create`, using the template's body with the sign-off
+Then follow CONTRIBUTING.md sections 6 and 7: push the branch to the fork, and open the pull request with `gh pr create`, using the template's body with the sign-off
 ticked only after the person's yes. `--json` gives exactly the result object described in the
 spec; exit code 0 means pass, 1 fail, 2 could not run.
 
